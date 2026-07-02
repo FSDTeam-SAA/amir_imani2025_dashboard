@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* --font-heading: "Goldman", sans-serif; */
+  --font-paragraph: "Poppins", sans-serif;
+  --base-color: #f04d2a;
+}
+
+:root {
+  /* White - Main Background, Text on dark backgrounds */
+  --background: #ffffff;
+  /* Cosmic Navy - Secondary Background, Text throughout website */
+  --foreground: #0e1d2b;
+  /* Earthy Beige - Secondary Backgrounds, Card Backgrounds */
+  --card: #eeeeee;
+  --card-foreground: #0e1d2b;
+  --popover: #ffffff;
+  --popover-foreground: #0e1d2b;
+  /* Fiery Orange - CTA Buttons, Accents, Highlights */
+  --primary: #f04d2a;
+  --primary-light: #f04d2a;
+  --primary-foreground: #ffffff;
+  /* Teal Blue - Primary Backgrounds or Navigation Bars */
+  --secondary: #4296a2;
+  --secondary-foreground: #ffffff;
+  /* Earthy Beige - Muted backgrounds */
+  --muted: #f2e3c6;
+  --muted-foreground: #0e1d2b;
+  /* Mystic Gold - Accents */
+  --accent: #f2e3c6;
+  --accent-foreground: #0e1d2b;
+  --destructive: #f04d2a;
+  --destructive-foreground: #ffffff;
+  /* Mystic Gold - Borders, Dividers */
+  --border: #d4a13d;
+  --input: #d4a13d;
+  --ring: #f04d2a;
+  /* Chart colors using the palette */
+  --chart-1: #f04d2a;
+  --chart-2: #4296a2;
+  --chart-3: #d4a13d;
+  --chart-4: #0e1d2b;
+  --chart-5: #f2e3c6;
+  --radius: 0.625rem;
+  /* Teal Blue - Sidebar backgrounds */
+  --sidebar: #4296a2;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #f04d2a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d4a13d;
+  --sidebar-accent-foreground: #0e1d2b;
+  --sidebar-border: #d4a13d;
+  --sidebar-ring: #f04d2a;
+}
+
+.dark {
+  /* Cosmic Navy - Main Background in dark mode */
+  --background: #0e1d2b;
+  /* White - Text in dark mode */
+  --foreground: #ffffff;
+  /* Darker shade for cards in dark mode */
+  --card: #1a2a3a;
+  --card-foreground: #ffffff;
+  --popover: #1a2a3a;
+  --popover-foreground: #ffffff;
+  /* Fiery Orange - Primary remains the same */
+  --primary: #f04d2a;
+  --primary-light: #f04d2a;
+  --primary-foreground: #ffffff;
+  /* Teal Blue - Secondary remains the same */
+  --secondary: #4296a2;
+  --secondary-foreground: #ffffff;
+  /* Darker muted for dark mode */
+  --muted: #1a2a3a;
+  --muted-foreground: #f2e3c6;
+  /* Mystic Gold - Accent remains the same */
+  --accent: #d4a13d;
+  --accent-foreground: #0e1d2b;
+  --destructive: #f04d2a;
+  --destructive-foreground: #ffffff;
+  /* Mystic Gold - Borders */
+  --border: #d4a13d;
+  --input: #d4a13d;
+  --ring: #f04d2a;
+  /* Chart colors using the palette */
+  --chart-1: #f04d2a;
+  --chart-2: #4296a2;
+  --chart-3: #d4a13d;
+  --chart-4: #f2e3c6;
+  --chart-5: #ffffff;
+  /* Teal Blue - Sidebar */
+  --sidebar: #4296a2;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #f04d2a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d4a13d;
+  --sidebar-accent-foreground: #0e1d2b;
+  --sidebar-border: #d4a13d;
+  --sidebar-ring: #f04d2a;
+}
+
+@theme inline {
+  /* --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback'; */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Add gradient utility class for primary gradient */
+@layer components {
+  .gradient-primary {
+    background: #f04d2a;
+  }
+}
