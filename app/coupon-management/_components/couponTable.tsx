@@ -92,7 +92,7 @@ export default function CouponDashboard() {
         }}
       />
 
-      <div className="mt-4 rounded-md border border-gray-100 bg-white p-4 shadow-sm md:p-6">
+      <div className="mt-4 rounded-md  bg-white p-4 shadow-sm md:p-6">
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex gap-1 rounded-lg border border-gray-100 bg-gray-50 p-1">
             {(["All", "Active", "Scheduled", "Expired"] as const).map((tab) => (

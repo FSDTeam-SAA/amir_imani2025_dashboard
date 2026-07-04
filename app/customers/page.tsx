@@ -28,7 +28,7 @@ export default function CustomerTable() {
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFilter, setDateFilter] = useState("All Joined Date");
-  const itemsPerPage = 5;
+  const itemsPerPage = 9;
 
   // Simple Mock Filtering Logic
   const filteredCustomers = useMemo(() => {
@@ -171,11 +171,11 @@ export default function CustomerTable() {
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white px-6">
+      <div className="bg-white px-6 ">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse rounded-lg border border-gray-100 shadow-sm">
             <thead>
-              <tr className="bg-[#FFF3E9] text-[#D97736] font-semibold text-xs tracking-wide uppercase border-b border-orange-100/50">
+              <tr className="bg-[#FDEBD8]  text-[#D97736] font-semibold text-xs tracking-wide uppercase border-b border-orange-100/50">
                 <th className="py-4 px-6 text-center sm:text-left">Customer</th>
                 <th className="py-4 px-6">Email</th>
                 <th className="py-4 px-6">Phone</th>
