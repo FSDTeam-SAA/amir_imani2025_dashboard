@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Edit2, Search, Trash2 } from "lucide-react";
+import { ChevronDown, Edit2, Loader2, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -26,62 +28,130 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import type { ApiResponse, Coupon as CouponRecord } from "@/lib/types/coupon";
 
-interface Coupon {
-  code: string;
-  description: string;
-  discountType: string;
-  value: string;
-  eligibleUsers: string;
-  usageCurrent: number;
-  usageTotal: number;
-  expiryDate: string;
-  status: "Active" | "Scheduled" | "Expired";
-}
+type CouponStatus = "Active" | "Scheduled" | "Expired";
 
-const coupons: Coupon[] = [
-  ["SUMMER25", "Summer Sale 2026", "25%", "All Users", 1842, 5000, "2026-08-31", "Active"],
-  ["WINTER15", "Winter Clearance 2026", "15%", "New Customers", 1250, 3000, "2026-12-15", "Scheduled"],
-  ["SPRING30", "Spring Fest 2026", "30%", "Returning Users", 732, 2000, "2026-05-20", "Active"],
-  ["FALL20", "Autumn Special 2026", "20%", "Selected Items", 900, 1000, "2026-10-10", "Expired"],
-  ["FLASH10", "Flash Deal 2026", "10%", "All Users", 350, 1500, "2026-07-01", "Active"],
-  ["BACKTOSCHOOL5", "Back to School 2026", "5%", "Students Only", 500, 1000, "2026-08-25", "Scheduled"],
-  ["BLACKFRIDAY50", "Black Friday 2026", "50%", "All Users", 2000, 3000, "2026-11-24", "Active"],
-  ["CYBERMONDAY40", "Cyber Monday 2026", "40%", "Online Purchases", 1500, 2500, "2026-11-28", "Active"],
-  ["EASTER20", "Easter Sale 2026", "20%", "All Users", 800, 1200, "2026-04-10", "Active"],
-  ["VALENTINE15", "Valentine's Day 2026", "15%", "Couples Only", 600, 900, "2026-02-14", "Scheduled"],
-  ["HALLOWEEN10", "Halloween Discount 2026", "10%", "All Users", 400, 500, "2026-10-31", "Expired"],
-].map(([code, description, value, eligibleUsers, usageCurrent, usageTotal, expiryDate, status]) => ({
-  code: String(code),
-  description: String(description),
-  discountType: "% Percentage",
-  value: String(value),
-  eligibleUsers: String(eligibleUsers),
-  usageCurrent: Number(usageCurrent),
-  usageTotal: Number(usageTotal),
-  expiryDate: String(expiryDate),
-  status: status as Coupon["status"],
-}));
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+
+const couponQueryKeys = {
+  lists: ["coupons", "list"] as const,
+};
+
+const getCouponStatus = (coupon: CouponRecord): CouponStatus => {
+  if (!coupon.isActive || new Date(coupon.expiryDate) < new Date()) {
+    return "Expired";
+  }
+
+  return "Active";
+};
+
+const formatEligibility = (coupon: CouponRecord) => {
+  if (coupon.eligibility === "first_time") return "First-Time Users";
+  if (coupon.eligibility === "specific") {
+    return `${coupon.eligibleUsers?.length || 0} Specific Users`;
+  }
+
+  return "All Users";
+};
+
+const formatDiscountType = (coupon: CouponRecord) =>
+  coupon.discountType === "percentage" ? "% Percentage" : "$ Fixed Amount";
+
+const formatValue = (coupon: CouponRecord) =>
+  coupon.discountType === "percentage"
+    ? `${coupon.discountValue}%`
+    : `$${coupon.discountValue}`;
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  (error as { message?: string }).message || fallback;
+
+const getCoupons = async () => {
+  const session = await getSession();
+  const res = await fetch(`${API_BASE_URL}/coupons?status=all`, {
+    headers: {
+      Authorization: `Bearer ${session?.accessToken}`,
+    },
+  });
+  const result = (await res.json()) as ApiResponse<CouponRecord[]>;
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to load coupons");
+  }
+
+  return result.data || [];
+};
+
+const deleteCoupon = async (id: string) => {
+  const session = await getSession();
+  const res = await fetch(`${API_BASE_URL}/coupons/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${session?.accessToken}`,
+    },
+  });
+  const result = (await res.json()) as ApiResponse<unknown>;
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to delete coupon");
+  }
+
+  return result;
+};
 
 export default function CouponDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<"All" | Coupon["status"]>("All");
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = React.useState<"All" | CouponStatus>("All");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
 
+  const { data: coupons = [], isLoading } = useQuery({
+    queryKey: couponQueryKeys.lists,
+    queryFn: getCoupons,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCoupon,
+    onSuccess: (data) => {
+      toast.success(data.message || "Coupon deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: couponQueryKeys.lists });
+    },
+    onError: (error: Error) => {
+      toast.error(getErrorMessage(error, "Failed to delete coupon."));
+    },
+  });
+
   const filteredData = React.useMemo(() => {
     return coupons.filter((coupon) => {
-      const matchesTab = activeTab === "All" || coupon.status === activeTab;
-      const matchesSearch = `${coupon.code} ${coupon.description}`
+      const status = getCouponStatus(coupon);
+      const matchesTab = activeTab === "All" || status === activeTab;
+      const matchesSearch = `${coupon.code} ${coupon.discountType}`
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
       return matchesTab && matchesSearch;
     });
-  }, [activeTab, searchQuery]);
+  }, [activeTab, coupons, searchQuery]);
+
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+  const pageData = filteredData.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
+  const handleDelete = (coupon: CouponRecord) => {
+    deleteMutation.mutate(coupon._id);
+  };
+
+  const deletingCouponId = deleteMutation.isPending
+    ? deleteMutation.variables
+    : "";
 
   return (
     <>
-     <DashboardHeader
+      <DashboardHeader
         title="Create Coupon"
         description="Set up a new discount code for your customers"
         actionLabel="Add  Coupon"
@@ -158,107 +228,196 @@ export default function CouponDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.slice(0, 10).map((coupon) => {
-                const progressPercentage = (coupon.usageCurrent / coupon.usageTotal) * 100;
-                return (
-                  <TableRow key={coupon.code} className="border-b border-gray-100 hover:bg-gray-50/40">
-                    <TableCell className="py-3.5">
-                      <div className="font-bold text-gray-900">{coupon.code}</div>
-                      <div className="mt-0.5 text-xs text-gray-400">{coupon.description}</div>
-                    </TableCell>
-                    <TableCell className="py-3.5">
-                      <Badge variant="secondary" className="rounded-md border-0 bg-gray-100 px-2 py-0.5 font-normal text-gray-600">
-                        {coupon.discountType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-3.5 font-bold text-gray-800">{coupon.value}</TableCell>
-                    <TableCell className="py-3.5 text-gray-600">{coupon.eligibleUsers}</TableCell>
-                    <TableCell className="py-3.5">
-                      <div className="flex items-center gap-3">
-                        <Progress value={progressPercentage} className="h-2 w-24 bg-gray-100" />
-                        <span className="text-xs text-gray-400">
-                          <strong className="font-medium text-gray-600">{coupon.usageCurrent}</strong>/{coupon.usageTotal}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3.5 text-gray-500">{coupon.expiryDate}</TableCell>
-                    <TableCell className="py-3.5">
-                      <Status status={coupon.status} />
-                    </TableCell>
-                    <TableCell className="py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-2.5">
-                        <button className="text-gray-400 transition-colors hover:text-gray-600">
-                          <Edit2 className="h-4 w-4 stroke-[1.75]" />
-                        </button>
-                        <button className="text-gray-400 transition-colors hover:text-rose-500">
-                          <Trash2 className="h-4 w-4 stroke-[1.75]" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {isLoading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-gray-500"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading coupons...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : pageData.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-gray-500"
+                  >
+                    No coupons found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pageData.map((coupon) => {
+                  const progressPercentage =
+                    coupon.usageLimit > 0
+                      ? (coupon.usedCount / coupon.usageLimit) * 100
+                      : 0;
+                  const status = getCouponStatus(coupon);
+                  return (
+                    <TableRow
+                      key={coupon._id}
+                      className="border-b border-gray-100 hover:bg-gray-50/40"
+                    >
+                      <TableCell className="py-3.5">
+                        <div className="font-bold text-gray-900">
+                          {coupon.code}
+                        </div>
+                        <div className="mt-0.5 text-xs text-gray-400">
+                          Minimum order ${coupon.minOrderAmount || 0}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        <Badge
+                          variant="secondary"
+                          className="rounded-md border-0 bg-gray-100 px-2 py-0.5 font-normal text-gray-600"
+                        >
+                          {formatDiscountType(coupon)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3.5 font-bold text-gray-800">
+                        {formatValue(coupon)}
+                      </TableCell>
+                      <TableCell className="py-3.5 text-gray-600">
+                        {formatEligibility(coupon)}
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        <div className="flex items-center gap-3">
+                          <Progress
+                            value={progressPercentage}
+                            className="h-2 w-24 bg-gray-100"
+                          />
+                          <span className="text-xs text-gray-400">
+                            <strong className="font-medium text-gray-600">
+                              {coupon.usedCount}
+                            </strong>
+                            /{coupon.usageLimit}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3.5 text-gray-500">
+                        {new Date(coupon.expiryDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        <Status status={status} />
+                      </TableCell>
+                      <TableCell className="py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-2.5">
+                          <button
+                            onClick={() =>
+                              router.push(`/coupon-management/${coupon._id}`)
+                            }
+                            className="text-gray-400 transition-colors hover:text-gray-600"
+                          >
+                            <Edit2 className="h-4 w-4 stroke-[1.75]" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(coupon)}
+                            disabled={deletingCouponId === coupon._id}
+                            className="text-gray-400 transition-colors hover:text-rose-500 disabled:opacity-50"
+                          >
+                            {deletingCouponId === coupon._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 stroke-[1.75]" />
+                            )}
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>
 
-        <div className="-mx-4 -mb-4 mt-8 flex flex-col items-center justify-between gap-4 rounded-b-md bg-[#f4f7f9] px-4 py-4 text-sm font-medium text-slate-500 sm:flex-row md:-mx-6 md:-mb-6 md:px-6">
-          <div>Showing 1 to {Math.min(10, filteredData.length)} of 500 results</div>
-          <Pagination className="w-auto">
-            <PaginationContent className="gap-1.5">
+        <div className="mt-6 flex flex-col gap-4 border-t border-gray-200 pt-4 md:flex-row md:items-center md:justify-between">
+          {/* Left Side */}
+          <p className="text-sm text-slate-600">
+            Showing{" "}
+            <span className="font-semibold">
+              {pageData.length ? (currentPage - 1) * pageSize + 1 : 0}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold">
+              {Math.min(currentPage * pageSize, filteredData.length)}
+            </span>{" "}
+            of <span className="font-semibold">{filteredData.length}</span>{" "}
+            results
+          </p>
+
+          {/* Right Side */}
+          <Pagination>
+            <PaginationContent className="gap-2">
               <PaginationItem>
                 <PaginationPrevious
                   href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
+                  onClick={(e) => {
+                    e.preventDefault();
                     if (currentPage > 1) setCurrentPage((page) => page - 1);
                   }}
-                  className="h-8 w-8 rounded-md border border-slate-300 bg-white p-0 text-slate-600 shadow-sm hover:bg-slate-50"
+                  className="h-9 w-9 rounded-lg border border-gray-300 bg-white p-0 shadow-sm transition hover:bg-gray-100"
                 />
               </PaginationItem>
+
               <PaginationItem>
                 <PaginationLink
                   href="#"
                   isActive={currentPage === 1}
-                  onClick={(event) => {
-                    event.preventDefault();
+                  onClick={(e) => {
+                    e.preventDefault();
                     setCurrentPage(1);
                   }}
-                  className={`h-8 w-8 rounded-md p-0 text-sm font-bold shadow-sm ${
+                  className={`h-9 w-9 rounded-lg p-0 font-medium transition ${
                     currentPage === 1
-                      ? "border border-[#0B0F19] bg-[#0B0F19] text-white hover:bg-[#0B0F19]/90"
-                      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                      ? "bg-[#0B0F19] text-white hover:bg-[#0B0F19]"
+                      : "border border-gray-300 bg-white hover:bg-gray-100"
                   }`}
                 >
                   1
                 </PaginationLink>
               </PaginationItem>
-              <PaginationItem>
-                <div className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-400 shadow-sm">
-                  <PaginationEllipsis className="h-4 w-4" />
-                </div>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  isActive={currentPage === 50}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    setCurrentPage(50);
-                  }}
-                  className="h-8 w-8 rounded-md border border-slate-300 bg-white p-0 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
-                >
-                  50
-                </PaginationLink>
-              </PaginationItem>
+
+              {totalPages > 2 && (
+                <PaginationItem>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white">
+                    <PaginationEllipsis className="h-4 w-4" />
+                  </div>
+                </PaginationItem>
+              )}
+
+              {totalPages > 1 && (
+                <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    isActive={currentPage === totalPages}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(totalPages);
+                    }}
+                    className={`h-9 w-9 rounded-lg p-0 font-medium transition ${
+                      currentPage === totalPages
+                        ? "bg-[#0B0F19] text-white hover:bg-[#0B0F19]"
+                        : "border border-gray-300 bg-white hover:bg-gray-100"
+                    }`}
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              )}
+
               <PaginationItem>
                 <PaginationNext
                   href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    if (currentPage < 50) setCurrentPage((page) => page + 1);
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages)
+                      setCurrentPage((page) => page + 1);
                   }}
-                  className="h-8 w-8 rounded-md border border-slate-300 bg-white p-0 text-slate-600 shadow-sm hover:bg-slate-50"
+                  className="h-9 w-9 rounded-lg border border-gray-300 bg-white p-0 shadow-sm transition hover:bg-gray-100"
                 />
               </PaginationItem>
             </PaginationContent>
@@ -269,12 +428,18 @@ export default function CouponDashboard() {
   );
 }
 
-function Status({ status }: { status: Coupon["status"] }) {
+function Status({ status }: { status: CouponStatus }) {
   const className = {
     Active: "bg-emerald-50 text-emerald-600",
     Scheduled: "bg-amber-50 text-amber-600",
     Expired: "bg-rose-50 text-rose-600",
   }[status];
 
-  return <Badge className={`rounded-md border-0 px-2.5 py-0.5 font-medium ${className}`}>{status}</Badge>;
+  return (
+    <Badge
+      className={`rounded-md border-0 px-2.5 py-0.5 font-medium ${className}`}
+    >
+      {status}
+    </Badge>
+  );
 }

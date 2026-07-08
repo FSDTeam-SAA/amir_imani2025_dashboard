@@ -18,8 +18,10 @@ export interface RegisterInput {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
+  password?: string;
   confirmPassword?: string;
+  address?: string;
+  phoneNum?: string;
 }
 
 export interface ForgotPasswordInput {
@@ -46,9 +48,11 @@ export interface AuthResponse {
   success: boolean;
   message?: string;
   data?: {
-    user: User;
-    accessToken: string;
+    user?: User;
+    userId?: string;
+    accessToken?: string;
     refreshToken?: string;
+    token?: string;
   };
 }
 
