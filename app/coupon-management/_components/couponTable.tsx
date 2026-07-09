@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Edit2, Loader2, Search, Trash2 } from "lucide-react";
+import { Edit2, Loader2, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSession, signOut } from "next-auth/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import {
   Pagination,
@@ -31,12 +30,31 @@ import {
 import type { ApiResponse, Coupon as CouponRecord } from "@/lib/types/coupon";
 
 type CouponStatus = "Active" | "Scheduled" | "Expired";
+type CouponApiStatus = "active" | "expired" | "all";
+
+type CouponListData = {
+  coupons: CouponRecord[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
 
 const couponQueryKeys = {
   lists: ["coupons", "list"] as const,
+  list: (page: number, limit: number, status: CouponApiStatus) =>
+    [...couponQueryKeys.lists, { page, limit, status }] as const,
+};
+
+const emptyCouponList: CouponListData = {
+  coupons: [],
+  total: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
 };
 
 const getCouponStatus = (coupon: CouponRecord): CouponStatus => {
@@ -67,20 +85,39 @@ const formatValue = (coupon: CouponRecord) =>
 const getErrorMessage = (error: unknown, fallback: string) =>
   (error as { message?: string }).message || fallback;
 
-const getCoupons = async () => {
+const getApiStatus = (tab: "All" | CouponStatus): CouponApiStatus => {
+  if (tab === "Active") return "active";
+  if (tab === "Expired") return "expired";
+  return "all";
+};
+
+const getCoupons = async ({
+  page,
+  limit,
+  status,
+}: {
+  page: number;
+  limit: number;
+  status: CouponApiStatus;
+}) => {
   const session = await getSession();
-  const res = await fetch(`${API_BASE_URL}/coupons?status=all`, {
+  const params = new URLSearchParams({
+    status,
+    page: String(page),
+    limit: String(limit),
+  });
+  const res = await fetch(`${API_BASE_URL}/coupons?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${session?.accessToken}`,
     },
   });
-  const result = (await res.json()) as ApiResponse<CouponRecord[]>;
+  const result = (await res.json()) as ApiResponse<CouponListData>;
 
   if (!res.ok) {
     throw new Error(result.message || "Failed to load coupons");
   }
 
-  return result.data || [];
+  return result.data || emptyCouponList;
 };
 
 const deleteCoupon = async (id: string) => {
@@ -106,11 +143,19 @@ export default function CouponDashboard() {
   const [activeTab, setActiveTab] = React.useState<"All" | CouponStatus>("All");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
+  const apiStatus = getApiStatus(activeTab);
 
-  const { data: coupons = [], isLoading } = useQuery({
-    queryKey: couponQueryKeys.lists,
-    queryFn: getCoupons,
+  const { data: couponList = emptyCouponList, isLoading } = useQuery({
+    queryKey: couponQueryKeys.list(currentPage, pageSize, apiStatus),
+    queryFn: () =>
+      getCoupons({
+        page: currentPage,
+        limit: pageSize,
+        status: apiStatus,
+      }),
   });
+  const coupons = couponList.coupons;
 
   const deleteMutation = useMutation({
     mutationFn: deleteCoupon,
@@ -134,11 +179,26 @@ export default function CouponDashboard() {
     });
   }, [activeTab, coupons, searchQuery]);
 
-  const pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
-  const pageData = filteredData.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
+  const usesLocalFilter =
+    searchQuery.trim().length > 0 || activeTab === "Scheduled";
+  const totalResults = usesLocalFilter ? filteredData.length : couponList.total;
+  const totalPages = usesLocalFilter ? 1 : Math.max(1, couponList.totalPages);
+  const pageData = usesLocalFilter
+    ? filteredData
+    : filteredData.slice(0, pageSize);
+  const pageStart = pageData.length ? (currentPage - 1) * pageSize + 1 : 0;
+  const pageEnd = usesLocalFilter
+    ? pageData.length
+    : Math.min(currentPage * pageSize, totalResults);
+  const pageNumbers = Array.from(
+    { length: Math.min(totalPages, 5) },
+    (_, index) => {
+      const start = Math.max(
+        1,
+        Math.min(currentPage - 2, totalPages - Math.min(totalPages, 5) + 1),
+      );
+      return start + index;
+    },
   );
 
   const handleDelete = (coupon: CouponRecord) => {
@@ -190,23 +250,19 @@ export default function CouponDashboard() {
                 type="text"
                 placeholder="Search coupons..."
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setCurrentPage(1);
+                }}
                 className="h-9 rounded-lg border-gray-200 bg-white pl-9 pr-4 text-xs focus-visible:ring-orange-500/20"
               />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-1 rounded-lg border-gray-200 text-gray-600"
-            >
-              Sort <ChevronDown className="h-4 w-4 text-gray-400" />
-            </Button>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-gray-50/50">
+        <div className="max-h-[calc(100vh-360px)] overflow-auto rounded-md border border-gray-100">
+          <Table className="min-w-[980px]">
+            <TableHeader className="sticky top-0 z-10 bg-gray-50">
               <TableRow className="border-b border-gray-100 hover:bg-transparent">
                 {[
                   "Coupon Code",
@@ -335,93 +391,115 @@ export default function CouponDashboard() {
         </div>
 
         <div className="mt-6 flex flex-col gap-4 border-t border-gray-200 pt-4 md:flex-row md:items-center md:justify-between">
-          {/* Left Side */}
-          <p className="text-sm text-slate-600">
+          <p className="min-w-0 text-sm text-slate-600">
             Showing{" "}
-            <span className="font-semibold">
-              {pageData.length ? (currentPage - 1) * pageSize + 1 : 0}
-            </span>{" "}
+            <span className="font-semibold">{pageStart}</span>{" "}
             to{" "}
-            <span className="font-semibold">
-              {Math.min(currentPage * pageSize, filteredData.length)}
-            </span>{" "}
-            of <span className="font-semibold">{filteredData.length}</span>{" "}
+            <span className="font-semibold">{pageEnd}</span>{" "}
+            of <span className="font-semibold">{totalResults}</span>{" "}
             results
           </p>
 
-          {/* Right Side */}
-          <Pagination>
-            <PaginationContent className="gap-2">
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) setCurrentPage((page) => page - 1);
-                  }}
-                  className="h-9 w-9 rounded-lg border border-gray-300 bg-white p-0 shadow-sm transition hover:bg-gray-100"
-                />
-              </PaginationItem>
-
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  isActive={currentPage === 1}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(1);
-                  }}
-                  className={`h-9 w-9 rounded-lg p-0 font-medium transition ${
-                    currentPage === 1
-                      ? "bg-[#0B0F19] text-white hover:bg-[#0B0F19]"
-                      : "border border-gray-300 bg-white hover:bg-gray-100"
-                  }`}
-                >
-                  1
-                </PaginationLink>
-              </PaginationItem>
-
-              {totalPages > 2 && (
+          {totalPages > 1 && (
+            <Pagination className="mx-0 w-full justify-start md:w-auto md:justify-end">
+              <PaginationContent className="w-full gap-2 overflow-x-auto pb-1 md:w-auto md:overflow-visible md:pb-0">
                 <PaginationItem>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white">
-                    <PaginationEllipsis className="h-4 w-4" />
-                  </div>
-                </PaginationItem>
-              )}
-
-              {totalPages > 1 && (
-                <PaginationItem>
-                  <PaginationLink
+                  <PaginationPrevious
                     href="#"
-                    isActive={currentPage === totalPages}
                     onClick={(e) => {
                       e.preventDefault();
-                      setCurrentPage(totalPages);
+                      if (currentPage > 1) setCurrentPage((page) => page - 1);
                     }}
-                    className={`h-9 w-9 rounded-lg p-0 font-medium transition ${
-                      currentPage === totalPages
-                        ? "bg-[#0B0F19] text-white hover:bg-[#0B0F19]"
-                        : "border border-gray-300 bg-white hover:bg-gray-100"
+                    className={`h-9 w-auto rounded-lg border border-gray-300 bg-white px-3 shadow-sm transition hover:bg-gray-100 ${
+                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
                     }`}
-                  >
-                    {totalPages}
-                  </PaginationLink>
+                  />
                 </PaginationItem>
-              )}
 
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages)
-                      setCurrentPage((page) => page + 1);
-                  }}
-                  className="h-9 w-9 rounded-lg border border-gray-300 bg-white p-0 shadow-sm transition hover:bg-gray-100"
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                {pageNumbers[0] > 1 && (
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(1);
+                      }}
+                      className="h-9 w-auto min-w-9 rounded-lg border border-gray-300 bg-white px-3 font-medium transition hover:bg-gray-100"
+                    >
+                      1
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+
+                {pageNumbers[0] > 2 && (
+                  <PaginationItem>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white">
+                      <PaginationEllipsis className="h-4 w-4" />
+                    </div>
+                  </PaginationItem>
+                )}
+
+                {pageNumbers.map((pageNumber) => (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      href="#"
+                      isActive={currentPage === pageNumber}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(pageNumber);
+                      }}
+                      className={`h-9 w-auto min-w-9 rounded-lg px-3 font-medium transition ${
+                        currentPage === pageNumber
+                          ? "bg-[#0B0F19] text-white hover:bg-[#0B0F19]"
+                          : "border border-gray-300 bg-white hover:bg-gray-100"
+                      }`}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+
+                {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+                  <PaginationItem>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white">
+                      <PaginationEllipsis className="h-4 w-4" />
+                    </div>
+                  </PaginationItem>
+                )}
+
+                {pageNumbers[pageNumbers.length - 1] < totalPages && (
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(totalPages);
+                      }}
+                      className="h-9 w-auto min-w-9 rounded-lg border border-gray-300 bg-white px-3 font-medium transition hover:bg-gray-100"
+                    >
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages)
+                        setCurrentPage((page) => page + 1);
+                    }}
+                    className={`h-9 w-auto rounded-lg border border-gray-300 bg-white px-3 shadow-sm transition hover:bg-gray-100 ${
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </div>
     </>
