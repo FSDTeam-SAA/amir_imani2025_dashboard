@@ -51,4 +51,11 @@ export const queryKeys = {
     details: () => [...queryKeys.products.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.products.details(), id] as const,
   },
+
+  reviews: {
+    all: ["reviews"] as const,
+    lists: () => [...queryKeys.reviews.all, "list"] as const,
+    list: (filters: { search?: string; status?: string }) =>
+      [...queryKeys.reviews.lists(), filters] as const,
+  },
 } as const;
