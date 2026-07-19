@@ -30,21 +30,41 @@ import { CreateProductInput, Product } from "@/lib/types/product";
 import RichTextEditor from "@/components/ui/rich-text-editor";
 import { TagInput } from "@/components/ui/tag-input";
 
-const formSchema = z.object({
-  productName: z.string().min(2, "Product name must be at least 2 characters."),
-  price: z.preprocess(
-    (val) => Number(val),
-    z.number().min(0, "Price must be positive.")
-  ),
-  productType: z.string().min(1, "Please select a product type."),
-  feature: z.string().optional(),
-  description: z.string().optional(),
-  videoLink: z.string().optional().or(z.literal("")),
-  imgs: z.array(z.string()).optional(),
-  color: z.array(z.string()).optional(),
-  size: z.array(z.string()).optional(),
-  quantity: z.preprocess((val) => Number(val), z.number().min(0).optional()),
-});
+const merchandiseCategories = [
+  "APPAREL",
+  "ACCESSORIES",
+  "PRINTS & POSTERS",
+  "STATIONERY",
+  "HOME & DECOR",
+  "COLLECTIBLES",
+] as const;
+
+const formSchema = z
+  .object({
+    productName: z.string().min(2, "Product name must be at least 2 characters."),
+    price: z.preprocess(
+      (val) => Number(val),
+      z.number().min(0, "Price must be positive.")
+    ),
+    productType: z.string().min(1, "Please select a product type."),
+    category: z.string().optional(),
+    feature: z.string().optional(),
+    description: z.string().optional(),
+    videoLink: z.string().optional().or(z.literal("")),
+    imgs: z.array(z.string()).optional(),
+    color: z.array(z.string()).optional(),
+    size: z.array(z.string()).optional(),
+    quantity: z.preprocess((val) => Number(val), z.number().min(0).optional()),
+  })
+  .superRefine((values, ctx) => {
+    if (values.productType === "marchandice" && !values.category) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["category"],
+        message: "Please select a merchandise category.",
+      });
+    }
+  });
 
 interface ProductFormProps {
   initialData?: Product;
@@ -69,6 +89,7 @@ export function ProductForm({
       productName: initialData?.productName || "",
       price: initialData?.price || 0,
       productType: initialData?.productType || "card",
+      category: initialData?.category || "",
       feature: initialData?.feature || "",
       description: initialData?.description || "",
       videoLink: initialData?.videoLink || "",
@@ -79,6 +100,13 @@ export function ProductForm({
   });
 
   const productType = form.watch("productType");
+
+  useEffect(() => {
+    if (productType !== "marchandice") {
+      form.setValue("category", "");
+      form.clearErrors("category");
+    }
+  }, [form, productType]);
 
   useEffect(() => {
     if (initialData) {
@@ -126,6 +154,7 @@ export function ProductForm({
       productName: values.productName,
       price: Number(values.price),
       productType: values.productType,
+      category: values.productType === "marchandice" ? values.category : undefined,
       feature: values.feature,
       description: values.description,
       videoLink: values.videoLink,
@@ -192,6 +221,39 @@ export function ProductForm({
                   </FormItem>
                 )}
               />
+
+              {productType === "marchandice" && (
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select merchandise category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {merchandiseCategories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        This is required for merchandise products and is used on the website filters.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField

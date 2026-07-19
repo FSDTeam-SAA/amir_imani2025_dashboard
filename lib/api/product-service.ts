@@ -31,6 +31,7 @@ export const productService = {
     formData.append("productName", input.productName);
     formData.append("price", input.price.toString());
     formData.append("productType", input.productType);
+    if (input.category) formData.append("category", input.category);
     if (input.feature) formData.append("feature", input.feature);
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);
@@ -72,6 +73,7 @@ export const productService = {
         productName: input.productName,
         price: input.price !== undefined ? Number(input.price) : undefined,
         productType: input.productType,
+        category: input.category,
         feature: input.feature,
         description: input.description,
         videoLink: input.videoLink,
@@ -102,6 +104,7 @@ export const productService = {
       }
     }
     if (input.productType) formData.append("productType", input.productType);
+    if (input.category) formData.append("category", input.category);
     if (input.feature) formData.append("feature", input.feature);
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);

@@ -37,6 +37,7 @@ interface PaginationFooterProps {
   total: number;
   pages?: number[];
   currentPage?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function PaginationFooter({
@@ -45,14 +46,24 @@ export function PaginationFooter({
   total,
   pages = [1, 2, 3, 4, 5, 6],
   currentPage = 1,
+  onPageChange,
 }: PaginationFooterProps) {
+  const hasPrevious = currentPage > 1;
+  const hasNext = currentPage < pages[pages.length - 1];
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 px-4 py-3 text-xs text-gray-500">
       <p>
         Showing {from} to {to} of {total} results
       </p>
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon-xs" className="border-gray-200">
+        <Button
+          variant="outline"
+          size="icon-xs"
+          className="border-gray-200"
+          onClick={() => onPageChange?.(currentPage - 1)}
+          disabled={!hasPrevious}
+        >
           <ChevronLeft className="h-3 w-3" />
         </Button>
         {pages.map((page) => (
@@ -66,11 +77,18 @@ export function PaginationFooter({
                 ? "bg-[#F04D2A] text-white hover:bg-[#F04D2A]/90"
                 : "bg-white text-gray-500"
             )}
+            onClick={() => onPageChange?.(page)}
           >
             {page}
           </Button>
         ))}
-        <Button variant="outline" size="icon-xs" className="border-gray-200">
+        <Button
+          variant="outline"
+          size="icon-xs"
+          className="border-gray-200"
+          onClick={() => onPageChange?.(currentPage + 1)}
+          disabled={!hasNext}
+        >
           <ChevronRight className="h-3 w-3" />
         </Button>
       </div>
@@ -93,6 +111,9 @@ export function StatusBadge({ status }: { status: string }) {
           normalized.includes("review")
         ? "bg-amber-50 text-amber-600"
         : normalized.includes("blocked") ||
+            normalized.includes("unsubscribed") ||
+            normalized.includes("inactive") ||
+            normalized.includes("cancelled") ||
             normalized.includes("expired") ||
             normalized.includes("rejected")
           ? "bg-rose-50 text-rose-600"
