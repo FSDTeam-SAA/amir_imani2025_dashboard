@@ -4,6 +4,27 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
 
+interface DecodedToken {
+  sub: string;
+  role: string;
+  email?: string;
+  name?: string;
+  iat?: number;
+  exp?: number;
+}
+
+function decodeJwtPayload(token: string): DecodedToken {
+  const [, payload] = token.split(".");
+
+  if (!payload) {
+    throw new Error("Invalid access token");
+  }
+
+  return JSON.parse(
+    Buffer.from(payload, "base64url").toString("utf8")
+  ) as DecodedToken;
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -61,15 +82,17 @@ const handler = NextAuth({
             throw new Error(data.message || "Login failed");
           }
 
-          const user = data.data?.user;
-          const token = data.data?.accessToken;
+          const token = data.data?.accessToken || data.data?.token;
+          if (!token) {
+            throw new Error("No access token received");
+          }
 
-          // console.log("API Login Response:", );
+          const decoded = decodeJwtPayload(token);
 
           return {
-            id: user?.id || user?._id || "unknown",
-            email: user?.email || credentials.email,
-            role: user?.role || "",
+            id: decoded.sub || "unknown",
+            email: decoded.email || credentials.email,
+            role: decoded.role || "",
             token, // accessToken from backend
           };
         } catch (error) {
