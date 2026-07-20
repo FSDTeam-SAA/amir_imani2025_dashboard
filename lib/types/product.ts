@@ -3,6 +3,15 @@ export interface Product {
   productName: string;
   price: number;
   productType?: "card" | "marchandice" | string; // Assuming 'marchandice' is the typo in DB, keeping it as string literal or string
+  category?:
+    | "ALL"
+    | "APPAREL"
+    | "ACCESSORIES"
+    | "PRINTS & POSTERS"
+    | "STATIONERY"
+    | "HOME & DECOR"
+    | "COLLECTIBLES"
+    | string;
   feature?: string;
   description?: string;
   videoLink?: string;
@@ -26,6 +35,7 @@ export interface CreateProductInput {
   productName: string;
   price: number;
   productType: string;
+  category?: string;
   feature?: string;
   description?: string;
   videoLink?: string;

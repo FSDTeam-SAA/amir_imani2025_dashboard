@@ -27,6 +27,7 @@ export const useCreateProduct = () => {
         productName: newProductData.productName,
         price: newProductData.price,
         productType: newProductData.productType,
+        category: newProductData.category,
         feature: newProductData.feature,
         description: newProductData.description,
         videoLink: newProductData.videoLink,
