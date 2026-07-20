@@ -40,6 +40,8 @@ export const productService = {
     const formData = new FormData();
     formData.append("productName", input.productName);
     formData.append("price", input.price.toString());
+    formData.append("ca_price", input.ca_price.toString());
+    formData.append("addHome", input.addHome.toString());
     formData.append("productType", input.productType);
     if (input.category) formData.append("category", input.category);
     if (input.feature) formData.append("feature", input.feature);
@@ -106,6 +108,9 @@ export const productService = {
       const payload = {
         productName: input.productName,
         price: input.price !== undefined ? Number(input.price) : undefined,
+        ca_price:
+          input.ca_price !== undefined ? Number(input.ca_price) : undefined,
+        addHome: input.addHome,
         productType: input.productType,
         category: input.category,
         feature: input.feature,
@@ -149,6 +154,15 @@ export const productService = {
       if (!isNaN(val)) {
         formData.append("price", val.toString());
       }
+    }
+    if (input.ca_price !== undefined) {
+      const val = Number(input.ca_price);
+      if (!isNaN(val)) {
+        formData.append("ca_price", val.toString());
+      }
+    }
+    if (input.addHome !== undefined) {
+      formData.append("addHome", input.addHome.toString());
     }
     if (input.productType) formData.append("productType", input.productType);
     if (input.category) formData.append("category", input.category);
