@@ -65,6 +65,11 @@ const formSchema = z
       (val) => Number(val),
       z.number().min(0, "Price must be positive."),
     ),
+    ca_price: z.preprocess(
+      (val) => Number(val),
+      z.number().min(0, "Canadian price must be positive."),
+    ),
+    addHome: z.boolean(),
     productType: z.string().min(1, "Please select a product type."),
     category: z.string().optional(),
     feature: z.string().optional(),
@@ -140,6 +145,8 @@ export function ProductForm({
     defaultValues: {
       productName: initialData?.productName || "",
       price: initialData?.price || 0,
+      ca_price: initialData?.ca_price || 0,
+      addHome: initialData?.addHome ?? false,
       productType: initialData?.productType || "card",
       category: initialData?.category || "",
       feature: initialData?.feature || "",
@@ -189,6 +196,10 @@ export function ProductForm({
       form.setValue("category", "");
       form.clearErrors("category");
     }
+
+    if (productType !== "card") {
+      form.setValue("addHome", false);
+    }
   }, [form, productType]);
 
   useEffect(() => {
@@ -229,6 +240,8 @@ export function ProductForm({
     const input: CreateProductInput = {
       productName: values.productName,
       price: Number(values.price),
+      ca_price: Number(values.ca_price),
+      addHome: values.productType === "card" ? values.addHome : false,
       productType: values.productType,
       category:
         values.productType === "marchandice" ? values.category : undefined,
@@ -347,15 +360,76 @@ export function ProductForm({
                 />
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              {productType === "card" && (
+                <FormField
+                  control={form.control}
+                  name="addHome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Show Card on Homepage</FormLabel>
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(value === "true")
+                        }
+                        value={field.value ? "true" : "false"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose homepage visibility" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="true">
+                            Yes — show on homepage
+                          </SelectItem>
+                          <SelectItem value="false">
+                            No — keep off homepage
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Controls whether this card is featured on the homepage.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price ($) *</FormLabel>
+                      <FormLabel>US Price (USD) *</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="99" {...field} />
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="99.00"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="ca_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Canada Price (CAD) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="135.00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

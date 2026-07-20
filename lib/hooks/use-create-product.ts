@@ -26,6 +26,8 @@ export const useCreateProduct = () => {
         _id: `temp-${Date.now()}`,
         productName: newProductData.productName,
         price: newProductData.price,
+        ca_price: newProductData.ca_price,
+        addHome: newProductData.addHome,
         productType: newProductData.productType,
         category: newProductData.category,
         feature: newProductData.feature,
