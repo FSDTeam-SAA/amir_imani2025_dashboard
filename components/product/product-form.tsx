@@ -1,8 +1,12 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import type { ChangeEvent } from "react";
+import { useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import Image from "next/image";
+import { Loader2, Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,7 +18,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -22,13 +25,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState, useEffect } from "react";
-import { Loader2, X, Upload } from "lucide-react";
-import Image from "next/image";
-import { CreateProductInput, Product } from "@/lib/types/product";
-
+import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/ui/rich-text-editor";
 import { TagInput } from "@/components/ui/tag-input";
+import {
+  CreateProductInput,
+  Product,
+  ProductPassAndPlayItem,
+  ProductRule,
+} from "@/lib/types/product";
 
 const merchandiseCategories = [
   "APPAREL",
@@ -39,12 +44,26 @@ const merchandiseCategories = [
   "COLLECTIBLES",
 ] as const;
 
+const ruleSchema = z.object({
+  num: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+});
+
+const passAndPlaySchema = z.object({
+  message: z.string().optional(),
+  name: z.string().optional(),
+  type: z.string().optional(),
+});
+
 const formSchema = z
   .object({
-    productName: z.string().min(2, "Product name must be at least 2 characters."),
+    productName: z
+      .string()
+      .min(2, "Product name must be at least 2 characters."),
     price: z.preprocess(
       (val) => Number(val),
-      z.number().min(0, "Price must be positive.")
+      z.number().min(0, "Price must be positive."),
     ),
     productType: z.string().min(1, "Please select a product type."),
     category: z.string().optional(),
@@ -55,6 +74,19 @@ const formSchema = z
     color: z.array(z.string()).optional(),
     size: z.array(z.string()).optional(),
     quantity: z.preprocess((val) => Number(val), z.number().min(0).optional()),
+    ruleTitle: z.string().optional(),
+    rulls: z.array(ruleSchema).optional(),
+    boardanatomyTitle: z.string().optional(),
+    boardAnatomyDiscription: z.string().optional(),
+    passandplayTittle: z.string().optional(),
+    passandplay: z.array(passAndPlaySchema).optional(),
+    garmentTitle: z.string().optional(),
+    garmentsMATERIAL: z.string().optional(),
+    garmentWEIGHT: z.string().optional(),
+    garmentFit: z.string().optional(),
+    garmentPRINT: z.string().optional(),
+    garmentMADeIN: z.string().optional(),
+    garmentCARE: z.string().optional(),
   })
   .superRefine((values, ctx) => {
     if (values.productType === "marchandice" && !values.category) {
@@ -66,12 +98,32 @@ const formSchema = z
     }
   });
 
+type ProductFormValues = z.infer<typeof formSchema>;
+
 interface ProductFormProps {
   initialData?: Product;
   onSubmit: (data: CreateProductInput) => void;
   isLoading?: boolean;
   onCancel: () => void;
 }
+
+const normalizeRules = (rules?: ProductRule[]) =>
+  Array.isArray(rules) && rules.length > 0
+    ? rules.map((rule) => ({
+        num: rule?.num || "",
+        title: rule?.title || "",
+        description: rule?.description || "",
+      }))
+    : [{ num: "01", title: "", description: "" }];
+
+const normalizePassAndPlay = (items?: ProductPassAndPlayItem[]) =>
+  Array.isArray(items) && items.length > 0
+    ? items.map((item) => ({
+        message: item?.message || "",
+        name: item?.name || "",
+        type: item?.type || "",
+      }))
+    : [{ message: "", name: "", type: "" }];
 
 export function ProductForm({
   initialData,
@@ -83,7 +135,7 @@ export function ProductForm({
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       productName: initialData?.productName || "",
@@ -96,10 +148,41 @@ export function ProductForm({
       color: initialData?.color || [],
       size: initialData?.size || [],
       quantity: initialData?.quantity || 0,
+      ruleTitle: initialData?.ruleTitle || "",
+      rulls: normalizeRules(initialData?.rulls),
+      boardanatomyTitle: initialData?.boardanatomyTitle || "",
+      boardAnatomyDiscription: initialData?.boardAnatomyDiscription || "",
+      passandplayTittle: initialData?.passandplayTittle || "",
+      passandplay: normalizePassAndPlay(initialData?.passandplay),
+      garmentTitle: initialData?.garmentTitle || "",
+      garmentsMATERIAL: initialData?.garmentsMATERIAL || "",
+      garmentWEIGHT: initialData?.garmentWEIGHT || "",
+      garmentFit: initialData?.garmentFit || "",
+      garmentPRINT: initialData?.garmentPRINT || "",
+      garmentMADeIN: initialData?.garmentMADeIN || "",
+      garmentCARE: initialData?.garmentCARE || "",
     },
   });
 
   const productType = form.watch("productType");
+
+  const {
+    fields: ruleFields,
+    append: appendRule,
+    remove: removeRule,
+  } = useFieldArray({
+    control: form.control,
+    name: "rulls",
+  });
+
+  const {
+    fields: passAndPlayFields,
+    append: appendPassAndPlay,
+    remove: removePassAndPlay,
+  } = useFieldArray({
+    control: form.control,
+    name: "passandplay",
+  });
 
   useEffect(() => {
     if (productType !== "marchandice") {
@@ -115,21 +198,19 @@ export function ProductForm({
       } else if (initialData.img) {
         setExistingImages([initialData.img]);
       }
-      // Ensure arrays for color/size if they come as strings from legacy data
-      // Note: We updated types, but runtime data might vary if migration wasn't done.
-      // But we'll trust defaultValues logic above combined with Zod coercion if needed.
     }
   }, [initialData]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setImages((prev) => [...prev, ...newFiles]);
+    if (!files) return;
 
-      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-      setPreviewUrls((prev) => [...prev, ...newPreviews]);
-    }
+    const newFiles = Array.from(files);
+    setImages((prev) => [...prev, ...newFiles]);
+    setPreviewUrls((prev) => [
+      ...prev,
+      ...newFiles.map((file) => URL.createObjectURL(file)),
+    ]);
   };
 
   const removeImage = (index: number) => {
@@ -144,17 +225,13 @@ export function ProductForm({
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Filter out any undefined or empty strings from existingImages just in case
-    const cleanedExistingImages = existingImages.filter(
-      (url) => typeof url === "string" && url.trim() !== ""
-    );
-
+  const handleSubmit = (values: ProductFormValues) => {
     const input: CreateProductInput = {
       productName: values.productName,
       price: Number(values.price),
       productType: values.productType,
-      category: values.productType === "marchandice" ? values.category : undefined,
+      category:
+        values.productType === "marchandice" ? values.category : undefined,
       feature: values.feature,
       description: values.description,
       videoLink: values.videoLink,
@@ -162,12 +239,29 @@ export function ProductForm({
       size: Array.isArray(values.size) ? values.size : [],
       quantity:
         values.quantity !== undefined ? Number(values.quantity) : undefined,
-      // Always send imgs as an array, even if empty
       imgs: images.length > 0 ? images : [],
-      // Always send existingImgs as an array, even if empty
-      existingImgs:
-        cleanedExistingImages.length > 0 ? cleanedExistingImages : [],
+      existingImgs: existingImages.filter(Boolean),
+      ruleTitle: values.ruleTitle,
+      rulls:
+        values.rulls?.filter(
+          (rule) => rule.num || rule.title || rule.description,
+        ) || [],
+      boardanatomyTitle: values.boardanatomyTitle,
+      boardAnatomyDiscription: values.boardAnatomyDiscription,
+      passandplayTittle: values.passandplayTittle,
+      passandplay:
+        values.passandplay?.filter(
+          (item) => item.message || item.name || item.type,
+        ) || [],
+      garmentTitle: values.garmentTitle,
+      garmentsMATERIAL: values.garmentsMATERIAL,
+      garmentWEIGHT: values.garmentWEIGHT,
+      garmentFit: values.garmentFit,
+      garmentPRINT: values.garmentPRINT,
+      garmentMADeIN: values.garmentMADeIN,
+      garmentCARE: values.garmentCARE,
     };
+
     onSubmit(input);
   };
 
@@ -175,9 +269,7 @@ export function ProductForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
           <div className="space-y-8">
-            {/* Basic Details Section */}
             <div className="rounded-lg border p-4 shadow-sm space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
                 Basic Details
@@ -247,7 +339,7 @@ export function ProductForm({
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        This is required for merchandise products and is used on the website filters.
+                        Used by the website merchandise category filter.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -285,7 +377,6 @@ export function ProductForm({
               </div>
             </div>
 
-            {/* Attributes Section */}
             <div className="rounded-lg border p-4 shadow-sm space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
                 Attributes
@@ -304,7 +395,7 @@ export function ProductForm({
                       />
                     </FormControl>
                     <FormDescription>
-                      Key feature of the product.
+                      Short summary shown near the product title.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -326,13 +417,11 @@ export function ProductForm({
                             placeholder="Type hex code (e.g. #FF0000) and press Enter"
                           />
                         </FormControl>
-                        <FormDescription>
-                          Enter hex codes and press Enter to add.
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="size"
@@ -346,9 +435,6 @@ export function ProductForm({
                             placeholder="Type size (e.g. XL) and press Enter"
                           />
                         </FormControl>
-                        <FormDescription>
-                          Enter sizes and press Enter to add.
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -356,11 +442,362 @@ export function ProductForm({
                 </>
               )}
             </div>
+
+            {productType === "card" && (
+              <>
+                <div className="rounded-lg border p-4 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="font-semibold text-lg">Game Rules</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        appendRule({ num: "", title: "", description: "" })
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Rule
+                    </Button>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="ruleTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rules Section Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="How to Play" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {ruleFields.map((rule, index) => (
+                    <div
+                      key={rule.id}
+                      className="rounded-md border p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Rule {index + 1}</p>
+                        {ruleFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeRule(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name={`rulls.${index}.num`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Step No.</FormLabel>
+                              <FormControl>
+                                <Input placeholder="01" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`rulls.${index}.title`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Setup" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name={`rulls.${index}.description`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                rows={4}
+                                placeholder="Describe this rule..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border p-4 shadow-sm space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">
+                    Board Anatomy
+                  </h3>
+
+                  <FormField
+                    control={form.control}
+                    name="boardanatomyTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Title</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Sixteen spaces. Three layers..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="boardAnatomyDiscription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={5}
+                            placeholder="Explain the board anatomy..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="rounded-lg border p-4 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="font-semibold text-lg">Pass &amp; Play</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        appendPassAndPlay({ message: "", name: "", type: "" })
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Card
+                    </Button>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="passandplayTittle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Pass & Play" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {passAndPlayFields.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="rounded-md border p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Card {index + 1}</p>
+                        {passAndPlayFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removePassAndPlay(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name={`passandplay.${index}.name`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Player 1" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`passandplay.${index}.type`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Meta / Type</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Editors pick" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name={`passandplay.${index}.message`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Message</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                rows={4}
+                                placeholder="Write the message..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {productType === "marchandice" && (
+              <div className="rounded-lg border p-4 shadow-sm space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2">
+                  Garment Details
+                </h3>
+
+                <FormField
+                  control={form.control}
+                  name="garmentTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Section Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Materials and care" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="garmentsMATERIAL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Material</FormLabel>
+                        <FormControl>
+                          <Input placeholder="100% Cotton" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="garmentWEIGHT"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight</FormLabel>
+                        <FormControl>
+                          <Input placeholder="220 GSM" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="garmentFit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fit</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Relaxed fit" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="garmentPRINT"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Print</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Screen print" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="garmentMADeIN"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Made In</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Bangladesh" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="garmentCARE"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Care</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Machine wash cold" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Content Section */}
+          <div className="space-y-8 md:sticky md:top-6 md:self-start">
             <div className="rounded-lg border p-4 shadow-sm space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">Content</h3>
               <FormField
@@ -383,7 +820,6 @@ export function ProductForm({
               />
             </div>
 
-            {/* Media Section */}
             <div className="rounded-lg border p-4 shadow-sm space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">Media</h3>
 
@@ -400,11 +836,6 @@ export function ProductForm({
                     <FormControl>
                       <Input placeholder="https://..." {...field} />
                     </FormControl>
-                    <FormDescription>
-                      {productType === "marchandice"
-                        ? "Provide the embeddable link URL."
-                        : "Provide the full YouTube video URL."}
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -413,7 +844,6 @@ export function ProductForm({
               <div className="space-y-4">
                 <FormLabel>Images</FormLabel>
                 <div className="flex flex-wrap gap-4">
-                  {/* Existing Images */}
                   {existingImages.map((url, idx) => (
                     <div
                       key={`existing-${idx}`}
@@ -435,7 +865,6 @@ export function ProductForm({
                     </div>
                   ))}
 
-                  {/* New Previews */}
                   {previewUrls.map((url, idx) => (
                     <div
                       key={`new-${idx}`}
@@ -457,7 +886,6 @@ export function ProductForm({
                     </div>
                   ))}
 
-                  {/* Upload Button */}
                   <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50">
                     <Upload className="w-6 h-6 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground mt-1">

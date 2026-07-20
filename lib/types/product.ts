@@ -17,12 +17,37 @@ export interface Product {
   videoLink?: string;
   img?: string; // Some products have 'img', some have 'imgs'
   imgs?: string[];
+  ruleTitle?: string;
+  rulls?: ProductRule[];
+  boardanatomyTitle?: string;
+  boardAnatomyDiscription?: string;
+  passandplayTittle?: string;
+  passandplay?: ProductPassAndPlayItem[];
+  garmentTitle?: string;
+  garmentsMATERIAL?: string;
+  garmentWEIGHT?: string;
+  garmentFit?: string;
+  garmentPRINT?: string;
+  garmentMADeIN?: string;
+  garmentCARE?: string;
   quantity?: number;
   color?: string[];
   size?: string[];
   createdAt: string;
   updatedAt: string;
   __v?: number;
+}
+
+export interface ProductRule {
+  num?: string;
+  title?: string;
+  description?: string;
+}
+
+export interface ProductPassAndPlayItem {
+  message?: string;
+  name?: string;
+  type?: string;
 }
 
 export interface ProductResponse {
@@ -44,4 +69,17 @@ export interface CreateProductInput {
   color?: string[];
   size?: string[];
   quantity?: number;
+  ruleTitle?: string;
+  rulls?: ProductRule[];
+  boardanatomyTitle?: string;
+  boardAnatomyDiscription?: string;
+  passandplayTittle?: string;
+  passandplay?: ProductPassAndPlayItem[];
+  garmentTitle?: string;
+  garmentsMATERIAL?: string;
+  garmentWEIGHT?: string;
+  garmentFit?: string;
+  garmentPRINT?: string;
+  garmentMADeIN?: string;
+  garmentCARE?: string;
 }

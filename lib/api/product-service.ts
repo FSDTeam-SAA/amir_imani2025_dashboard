@@ -5,6 +5,16 @@ import type {
   CreateProductInput,
 } from "../types/product";
 
+const appendJsonArray = (
+  formData: FormData,
+  key: string,
+  value?: unknown[] | string[]
+) => {
+  if (Array.isArray(value) && value.length > 0) {
+    formData.append(key, JSON.stringify(value));
+  }
+};
+
 export const productService = {
   // Fetch all products
   getAll: async (): Promise<Product[]> => {
@@ -35,14 +45,38 @@ export const productService = {
     if (input.feature) formData.append("feature", input.feature);
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);
-    if (input.color && input.color.length > 0) {
-      input.color.forEach((c) => formData.append("color", c));
-    }
-    if (input.size && input.size.length > 0) {
-      input.size.forEach((s) => formData.append("size", s));
-    }
+    appendJsonArray(formData, "color", input.color);
+    appendJsonArray(formData, "size", input.size);
     if (input.quantity !== undefined)
       formData.append("quantity", input.quantity.toString());
+    if (input.ruleTitle) formData.append("ruleTitle", input.ruleTitle);
+    appendJsonArray(formData, "rulls", input.rulls);
+    if (input.boardanatomyTitle) {
+      formData.append("boardanatomyTitle", input.boardanatomyTitle);
+    }
+    if (input.boardAnatomyDiscription) {
+      formData.append(
+        "boardAnatomyDiscription",
+        input.boardAnatomyDiscription
+      );
+    }
+    if (input.passandplayTittle) {
+      formData.append("passandplayTittle", input.passandplayTittle);
+    }
+    appendJsonArray(formData, "passandplay", input.passandplay);
+    if (input.garmentTitle) formData.append("garmentTitle", input.garmentTitle);
+    if (input.garmentsMATERIAL) {
+      formData.append("garmentsMATERIAL", input.garmentsMATERIAL);
+    }
+    if (input.garmentWEIGHT) {
+      formData.append("garmentWEIGHT", input.garmentWEIGHT);
+    }
+    if (input.garmentFit) formData.append("garmentFit", input.garmentFit);
+    if (input.garmentPRINT) formData.append("garmentPRINT", input.garmentPRINT);
+    if (input.garmentMADeIN) {
+      formData.append("garmentMADeIN", input.garmentMADeIN);
+    }
+    if (input.garmentCARE) formData.append("garmentCARE", input.garmentCARE);
 
     // Only append imgs if array has items
     if (input.imgs && Array.isArray(input.imgs) && input.imgs.length > 0) {
@@ -81,6 +115,19 @@ export const productService = {
         size: input.size,
         quantity:
           input.quantity !== undefined ? Number(input.quantity) : undefined,
+        ruleTitle: input.ruleTitle,
+        rulls: input.rulls,
+        boardanatomyTitle: input.boardanatomyTitle,
+        boardAnatomyDiscription: input.boardAnatomyDiscription,
+        passandplayTittle: input.passandplayTittle,
+        passandplay: input.passandplay,
+        garmentTitle: input.garmentTitle,
+        garmentsMATERIAL: input.garmentsMATERIAL,
+        garmentWEIGHT: input.garmentWEIGHT,
+        garmentFit: input.garmentFit,
+        garmentPRINT: input.garmentPRINT,
+        garmentMADeIN: input.garmentMADeIN,
+        garmentCARE: input.garmentCARE,
         imgs:
           Array.isArray(input.existingImgs) && input.existingImgs.length > 0
             ? input.existingImgs
@@ -108,14 +155,37 @@ export const productService = {
     if (input.feature) formData.append("feature", input.feature);
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);
+    if (input.ruleTitle) formData.append("ruleTitle", input.ruleTitle);
+    if (input.boardanatomyTitle) {
+      formData.append("boardanatomyTitle", input.boardanatomyTitle);
+    }
+    if (input.boardAnatomyDiscription) {
+      formData.append(
+        "boardAnatomyDiscription",
+        input.boardAnatomyDiscription
+      );
+    }
+    if (input.passandplayTittle) {
+      formData.append("passandplayTittle", input.passandplayTittle);
+    }
+    if (input.garmentTitle) formData.append("garmentTitle", input.garmentTitle);
+    if (input.garmentsMATERIAL) {
+      formData.append("garmentsMATERIAL", input.garmentsMATERIAL);
+    }
+    if (input.garmentWEIGHT) {
+      formData.append("garmentWEIGHT", input.garmentWEIGHT);
+    }
+    if (input.garmentFit) formData.append("garmentFit", input.garmentFit);
+    if (input.garmentPRINT) formData.append("garmentPRINT", input.garmentPRINT);
+    if (input.garmentMADeIN) {
+      formData.append("garmentMADeIN", input.garmentMADeIN);
+    }
+    if (input.garmentCARE) formData.append("garmentCARE", input.garmentCARE);
 
-    // Color and size as arrays
-    if (input.color && input.color.length > 0) {
-      input.color.forEach((c) => formData.append("color", c));
-    }
-    if (input.size && input.size.length > 0) {
-      input.size.forEach((s) => formData.append("size", s));
-    }
+    appendJsonArray(formData, "color", input.color);
+    appendJsonArray(formData, "size", input.size);
+    appendJsonArray(formData, "rulls", input.rulls);
+    appendJsonArray(formData, "passandplay", input.passandplay);
 
     if (input.quantity !== undefined) {
       const val = Number(input.quantity);
@@ -126,9 +196,7 @@ export const productService = {
 
     // CONSISTENCY: Send both existing URLs and new files under the 'imgs' field.
     // The backend FilesInterceptor will pull the files, and the body will contain the strings.
-    if (input.existingImgs && input.existingImgs.length > 0) {
-      input.existingImgs.forEach((url) => formData.append("imgs[]", url));
-    }
+    appendJsonArray(formData, "existingImgs", input.existingImgs);
 
     if (input.imgs && input.imgs.length > 0) {
       input.imgs.forEach((file) => {
