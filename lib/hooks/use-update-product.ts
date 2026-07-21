@@ -47,6 +47,8 @@ export const useUpdateProduct = () => {
                   addHome: data.addHome ?? product.addHome,
                   productType: data.productType ?? product.productType,
                   category: data.category ?? product.category,
+                  merchandiseBadge:
+                    data.merchandiseBadge ?? product.merchandiseBadge,
                   description: data.description ?? product.description,
                   feature: data.feature ?? product.feature,
                   quantity: data.quantity ?? product.quantity,
@@ -67,6 +69,8 @@ export const useUpdateProduct = () => {
           addHome: data.addHome ?? previousProduct.addHome,
           productType: data.productType ?? previousProduct.productType,
           category: data.category ?? previousProduct.category,
+          merchandiseBadge:
+            data.merchandiseBadge ?? previousProduct.merchandiseBadge,
           description: data.description ?? previousProduct.description,
           feature: data.feature ?? previousProduct.feature,
           quantity: data.quantity ?? previousProduct.quantity,

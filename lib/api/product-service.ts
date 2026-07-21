@@ -44,6 +44,8 @@ export const productService = {
     formData.append("addHome", input.addHome.toString());
     formData.append("productType", input.productType);
     if (input.category) formData.append("category", input.category);
+    if (input.merchandiseBadge)
+      formData.append("merchandiseBadge", input.merchandiseBadge);
     if (input.feature) formData.append("feature", input.feature);
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);
@@ -113,6 +115,7 @@ export const productService = {
         addHome: input.addHome,
         productType: input.productType,
         category: input.category,
+        merchandiseBadge: input.merchandiseBadge,
         feature: input.feature,
         description: input.description,
         videoLink: input.videoLink,
@@ -166,6 +169,8 @@ export const productService = {
     }
     if (input.productType) formData.append("productType", input.productType);
     if (input.category) formData.append("category", input.category);
+    if (input.merchandiseBadge)
+      formData.append("merchandiseBadge", input.merchandiseBadge);
     if (input.feature) formData.append("feature", input.feature);
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);
