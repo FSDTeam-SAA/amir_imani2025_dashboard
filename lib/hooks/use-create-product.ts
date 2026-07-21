@@ -30,6 +30,7 @@ export const useCreateProduct = () => {
         addHome: newProductData.addHome,
         productType: newProductData.productType,
         category: newProductData.category,
+        merchandiseBadge: newProductData.merchandiseBadge,
         feature: newProductData.feature,
         description: newProductData.description,
         videoLink: newProductData.videoLink,

@@ -44,6 +44,14 @@ const merchandiseCategories = [
   "COLLECTIBLES",
 ] as const;
 
+const merchandiseBadges = [
+  { value: "none", label: "No Badge" },
+  { value: "new_arrival", label: "New Arrival" },
+  { value: "most_popular", label: "Most Popular" },
+  { value: "best_seller", label: "Best Seller" },
+  { value: "limited_edition", label: "Limited Edition" },
+] as const;
+
 const ruleSchema = z.object({
   num: z.string().optional(),
   title: z.string().optional(),
@@ -72,6 +80,15 @@ const formSchema = z
     addHome: z.boolean(),
     productType: z.string().min(1, "Please select a product type."),
     category: z.string().optional(),
+    merchandiseBadge: z
+      .enum([
+        "none",
+        "new_arrival",
+        "most_popular",
+        "best_seller",
+        "limited_edition",
+      ])
+      .optional(),
     feature: z.string().optional(),
     description: z.string().optional(),
     videoLink: z.string().optional().or(z.literal("")),
@@ -149,6 +166,7 @@ export function ProductForm({
       addHome: initialData?.addHome ?? false,
       productType: initialData?.productType || "card",
       category: initialData?.category || "",
+      merchandiseBadge: initialData?.merchandiseBadge || "none",
       feature: initialData?.feature || "",
       description: initialData?.description || "",
       videoLink: initialData?.videoLink || "",
@@ -194,6 +212,7 @@ export function ProductForm({
   useEffect(() => {
     if (productType !== "marchandice") {
       form.setValue("category", "");
+      form.setValue("merchandiseBadge", "none");
       form.clearErrors("category");
     }
 
@@ -245,6 +264,10 @@ export function ProductForm({
       productType: values.productType,
       category:
         values.productType === "marchandice" ? values.category : undefined,
+      merchandiseBadge:
+        values.productType === "marchandice"
+          ? values.merchandiseBadge
+          : undefined,
       feature: values.feature,
       description: values.description,
       videoLink: values.videoLink,
@@ -328,36 +351,68 @@ export function ProductForm({
               />
 
               {productType === "marchandice" && (
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select merchandise category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {merchandiseCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Used by the website merchandise category filter.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select merchandise category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {merchandiseCategories.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Used by the website merchandise category filter.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="merchandiseBadge"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Merchandise Badge</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || "none"}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select badge" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {merchandiseBadges.map((badge) => (
+                              <SelectItem key={badge.value} value={badge.value}>
+                                {badge.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Shown only on merchandise cards on the website.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
 
               {productType === "card" && (

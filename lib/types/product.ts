@@ -14,6 +14,7 @@ export interface Product {
     | "HOME & DECOR"
     | "COLLECTIBLES"
     | string;
+  merchandiseBadge?: MerchandiseBadge;
   feature?: string;
   description?: string;
   videoLink?: string;
@@ -52,6 +53,13 @@ export interface ProductPassAndPlayItem {
   type?: string;
 }
 
+export type MerchandiseBadge =
+  | "none"
+  | "new_arrival"
+  | "most_popular"
+  | "best_seller"
+  | "limited_edition";
+
 export interface ProductResponse {
   success: boolean;
   message: string;
@@ -65,6 +73,7 @@ export interface CreateProductInput {
   addHome: boolean;
   productType: string;
   category?: string;
+  merchandiseBadge?: MerchandiseBadge;
   feature?: string;
   description?: string;
   videoLink?: string;
