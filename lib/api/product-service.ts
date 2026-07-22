@@ -81,6 +81,14 @@ export const productService = {
       formData.append("garmentMADeIN", input.garmentMADeIN);
     }
     if (input.garmentCARE) formData.append("garmentCARE", input.garmentCARE);
+    appendJsonArray(formData, "productFeatures", input.productFeatures);
+    if (input.gameSubtitle) formData.append("gameSubtitle", input.gameSubtitle);
+    if (input.players) formData.append("players", input.players);
+    if (input.age) formData.append("age", input.age);
+    if (input.minutes) formData.append("minutes", input.minutes);
+    if (input.cards) formData.append("cards", input.cards);
+    if (input.inTheBox) formData.append("inTheBox", JSON.stringify(input.inTheBox));
+    if (input.homeImage) formData.append("homeImage", input.homeImage);
 
     // Only append imgs if array has items
     if (input.imgs && Array.isArray(input.imgs) && input.imgs.length > 0) {
@@ -106,7 +114,7 @@ export const productService = {
     input: Partial<CreateProductInput>
   ): Promise<Product> => {
     // If there are no new images to upload, send as JSON to avoid FormData string conversion issues
-    if (!input.imgs || input.imgs.length === 0) {
+    if ((!input.imgs || input.imgs.length === 0) && !input.homeImage) {
       const payload = {
         productName: input.productName,
         price: input.price !== undefined ? Number(input.price) : undefined,
@@ -136,6 +144,14 @@ export const productService = {
         garmentPRINT: input.garmentPRINT,
         garmentMADeIN: input.garmentMADeIN,
         garmentCARE: input.garmentCARE,
+        productFeatures: input.productFeatures,
+        gameSubtitle: input.gameSubtitle,
+        players: input.players,
+        age: input.age,
+        minutes: input.minutes,
+        cards: input.cards,
+        inTheBox: input.inTheBox,
+        homeImage: input.existingHomeImage,
         imgs:
           Array.isArray(input.existingImgs) && input.existingImgs.length > 0
             ? input.existingImgs
@@ -200,6 +216,18 @@ export const productService = {
       formData.append("garmentMADeIN", input.garmentMADeIN);
     }
     if (input.garmentCARE) formData.append("garmentCARE", input.garmentCARE);
+    appendJsonArray(formData, "productFeatures", input.productFeatures);
+    if (input.gameSubtitle) formData.append("gameSubtitle", input.gameSubtitle);
+    if (input.players) formData.append("players", input.players);
+    if (input.age) formData.append("age", input.age);
+    if (input.minutes) formData.append("minutes", input.minutes);
+    if (input.cards) formData.append("cards", input.cards);
+    if (input.inTheBox) formData.append("inTheBox", JSON.stringify(input.inTheBox));
+    if (input.homeImage) {
+      formData.append("homeImage", input.homeImage);
+    } else if (input.existingHomeImage) {
+      formData.append("homeImage", input.existingHomeImage);
+    }
 
     appendJsonArray(formData, "color", input.color);
     appendJsonArray(formData, "size", input.size);

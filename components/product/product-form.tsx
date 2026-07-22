@@ -64,6 +64,12 @@ const passAndPlaySchema = z.object({
   type: z.string().optional(),
 });
 
+const boxItemSchema = z.object({
+  number: z.string().optional(),
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+});
+
 const formSchema = z
   .object({
     productName: z
@@ -109,6 +115,19 @@ const formSchema = z
     garmentPRINT: z.string().optional(),
     garmentMADeIN: z.string().optional(),
     garmentCARE: z.string().optional(),
+    productFeatures: z.array(z.string()).optional(),
+    gameSubtitle: z.string().optional(),
+    players: z.string().optional(),
+    age: z.string().optional(),
+    minutes: z.string().optional(),
+    cards: z.string().optional(),
+    inTheBox: z
+      .object({
+        title: z.string().optional(),
+        subtitle: z.string().optional(),
+        boxnumbers: z.array(boxItemSchema).optional(),
+      })
+      .optional(),
   })
   .superRefine((values, ctx) => {
     if (values.productType === "marchandice" && !values.category) {
@@ -156,6 +175,11 @@ export function ProductForm({
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [homeImage, setHomeImage] = useState<File>();
+  const [homeImagePreview, setHomeImagePreview] = useState("");
+  const [existingHomeImage, setExistingHomeImage] = useState(
+    initialData?.homeImage || "",
+  );
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -186,6 +210,20 @@ export function ProductForm({
       garmentPRINT: initialData?.garmentPRINT || "",
       garmentMADeIN: initialData?.garmentMADeIN || "",
       garmentCARE: initialData?.garmentCARE || "",
+      productFeatures: initialData?.productFeatures || [],
+      gameSubtitle: initialData?.gameSubtitle || "",
+      players: initialData?.players || "",
+      age: initialData?.age || "",
+      minutes: initialData?.minutes || "",
+      cards: initialData?.cards || "",
+      inTheBox: {
+        title: initialData?.inTheBox?.title || "",
+        subtitle: initialData?.inTheBox?.subtitle || "",
+        boxnumbers:
+          initialData?.inTheBox?.boxnumbers?.length
+            ? initialData.inTheBox.boxnumbers
+            : [{ number: "1", title: "", subtitle: "" }],
+      },
     },
   });
 
@@ -198,6 +236,15 @@ export function ProductForm({
   } = useFieldArray({
     control: form.control,
     name: "rulls",
+  });
+
+  const {
+    fields: boxFields,
+    append: appendBoxItem,
+    remove: removeBoxItem,
+  } = useFieldArray({
+    control: form.control,
+    name: "inTheBox.boxnumbers",
   });
 
   const {
@@ -255,6 +302,22 @@ export function ProductForm({
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleHomeImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (homeImagePreview) URL.revokeObjectURL(homeImagePreview);
+    setHomeImage(file);
+    setHomeImagePreview(URL.createObjectURL(file));
+    setExistingHomeImage("");
+  };
+
+  const removeHomeImage = () => {
+    if (homeImagePreview) URL.revokeObjectURL(homeImagePreview);
+    setHomeImage(undefined);
+    setHomeImagePreview("");
+    setExistingHomeImage("");
+  };
+
   const handleSubmit = (values: ProductFormValues) => {
     const input: CreateProductInput = {
       productName: values.productName,
@@ -296,6 +359,29 @@ export function ProductForm({
       garmentPRINT: values.garmentPRINT,
       garmentMADeIN: values.garmentMADeIN,
       garmentCARE: values.garmentCARE,
+      productFeatures:
+        values.productType === "marchandice"
+          ? (values.productFeatures || []).filter(Boolean)
+          : undefined,
+      gameSubtitle:
+        values.productType === "card" ? values.gameSubtitle : undefined,
+      players: values.productType === "card" ? values.players : undefined,
+      age: values.productType === "card" ? values.age : undefined,
+      minutes: values.productType === "card" ? values.minutes : undefined,
+      cards: values.productType === "card" ? values.cards : undefined,
+      inTheBox:
+        values.productType === "card"
+          ? {
+              title: values.inTheBox?.title,
+              subtitle: values.inTheBox?.subtitle,
+              boxnumbers: (values.inTheBox?.boxnumbers || []).filter(
+                (item) => item.number || item.title || item.subtitle,
+              ),
+            }
+          : undefined,
+      homeImage: values.productType === "card" ? homeImage : undefined,
+      existingHomeImage:
+        values.productType === "card" ? existingHomeImage : undefined,
     };
 
     onSubmit(input);
@@ -568,12 +654,173 @@ export function ProductForm({
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="productFeatures"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Features</FormLabel>
+                        <FormControl>
+                          <TagInput
+                            value={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Type a feature and press Enter"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Add each feature as a separate text item.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
             </div>
 
             {productType === "card" && (
               <>
+                <div className="rounded-lg border p-4 shadow-sm space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">
+                    Game Details
+                  </h3>
+                  <FormField
+                    control={form.control}
+                    name="gameSubtitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Game Subtitle</FormLabel>
+                        <FormControl>
+                          <Input placeholder="A game for everyone" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {([
+                      ["players", "Players", "2-6"],
+                      ["age", "Age", "8+"],
+                      ["minutes", "Minutes", "60-180"],
+                      ["cards", "Cards", "32"],
+                    ] as const).map(([name, label, placeholder]) => (
+                      <FormField
+                        key={name}
+                        control={form.control}
+                        name={name}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{label}</FormLabel>
+                            <FormControl>
+                              <Input placeholder={placeholder} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="font-semibold text-lg">In The Box</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        appendBoxItem({ number: "", title: "", subtitle: "" })
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="inTheBox.title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="What's Included" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="inTheBox.subtitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Subtitle</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Everything you need for your practice"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {boxFields.map((item, index) => (
+                    <div key={item.id} className="rounded-md border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Item {index + 1}</p>
+                        {boxFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeBoxItem(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <FormField
+                          control={form.control}
+                          name={`inTheBox.boxnumbers.${index}.number`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Number</FormLabel>
+                              <FormControl><Input placeholder="1" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`inTheBox.boxnumbers.${index}.title`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Title</FormLabel>
+                              <FormControl><Input placeholder="Yoga Mat" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`inTheBox.boxnumbers.${index}.subtitle`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Subtitle</FormLabel>
+                              <FormControl><Input placeholder="Premium 6mm mat" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="rounded-lg border p-4 shadow-sm space-y-4">
                   <div className="flex items-center justify-between border-b pb-2">
                     <h3 className="font-semibold text-lg">Game Rules</h3>
@@ -1030,6 +1277,46 @@ export function ProductForm({
                   </label>
                 </div>
               </div>
+
+              {productType === "card" && (
+                <div className="space-y-4 border-t pt-4">
+                  <FormLabel>Home Image</FormLabel>
+                  <div className="flex items-center gap-4">
+                    {(homeImagePreview || existingHomeImage) && (
+                      <div className="relative w-32 h-24 border rounded-md overflow-hidden bg-muted">
+                        <Image
+                          src={homeImagePreview || existingHomeImage}
+                          alt="Home image"
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeHomeImage}
+                          className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl-md hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                    <label className="flex flex-col items-center justify-center w-32 h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50">
+                      <Upload className="w-6 h-6 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground mt-1">
+                        Upload Home Image
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleHomeImageChange}
+                      />
+                    </label>
+                  </div>
+                  <FormDescription>
+                    This image is available only for card products.
+                  </FormDescription>
+                </div>
+              )}
             </div>
           </div>
         </div>

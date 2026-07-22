@@ -33,6 +33,14 @@ export interface Product {
   garmentPRINT?: string;
   garmentMADeIN?: string;
   garmentCARE?: string;
+  productFeatures?: string[];
+  gameSubtitle?: string;
+  players?: string;
+  age?: string;
+  minutes?: string;
+  cards?: string;
+  inTheBox?: ProductInTheBox;
+  homeImage?: string;
   quantity?: number;
   color?: string[];
   size?: string[];
@@ -51,6 +59,18 @@ export interface ProductPassAndPlayItem {
   message?: string;
   name?: string;
   type?: string;
+}
+
+export interface ProductBoxItem {
+  number?: string;
+  title?: string;
+  subtitle?: string;
+}
+
+export interface ProductInTheBox {
+  title?: string;
+  subtitle?: string;
+  boxnumbers?: ProductBoxItem[];
 }
 
 export type MerchandiseBadge =
@@ -95,4 +115,13 @@ export interface CreateProductInput {
   garmentPRINT?: string;
   garmentMADeIN?: string;
   garmentCARE?: string;
+  productFeatures?: string[];
+  gameSubtitle?: string;
+  players?: string;
+  age?: string;
+  minutes?: string;
+  cards?: string;
+  inTheBox?: ProductInTheBox;
+  homeImage?: File;
+  existingHomeImage?: string;
 }
