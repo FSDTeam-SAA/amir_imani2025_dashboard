@@ -2,6 +2,7 @@ export interface Product {
   _id: string;
   productName: string;
   price: number;
+  previousPrice?: number;
   ca_price?: number;
   addHome?: boolean;
   productType?: "card" | "marchandice" | string; // Assuming 'marchandice' is the typo in DB, keeping it as string literal or string
@@ -89,6 +90,7 @@ export interface ProductResponse {
 export interface CreateProductInput {
   productName: string;
   price: number;
+  previousPrice?: number;
   ca_price: number;
   addHome: boolean;
   productType: string;

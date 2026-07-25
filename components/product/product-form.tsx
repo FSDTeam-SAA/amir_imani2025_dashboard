@@ -79,6 +79,10 @@ const formSchema = z
       (val) => Number(val),
       z.number().min(0, "Price must be positive."),
     ),
+    previousPrice: z.preprocess(
+      (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
+      z.number().min(0, "Previous price must be positive.").optional(),
+    ),
     ca_price: z.preprocess(
       (val) => Number(val),
       z.number().min(0, "Canadian price must be positive."),
@@ -186,6 +190,7 @@ export function ProductForm({
     defaultValues: {
       productName: initialData?.productName || "",
       price: initialData?.price || 0,
+      previousPrice: initialData?.previousPrice,
       ca_price: initialData?.ca_price || 0,
       addHome: initialData?.addHome ?? false,
       productType: initialData?.productType || "card",
@@ -322,6 +327,8 @@ export function ProductForm({
     const input: CreateProductInput = {
       productName: values.productName,
       price: Number(values.price),
+      previousPrice:
+        values.previousPrice !== undefined ? Number(values.previousPrice) : undefined,
       ca_price: Number(values.ca_price),
       addHome: values.productType === "card" ? values.addHome : false,
       productType: values.productType,
@@ -572,6 +579,29 @@ export function ProductForm({
                           {...field}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="previousPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Previous Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="79.00"
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Optional original price; it will be shown with a line through it.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
