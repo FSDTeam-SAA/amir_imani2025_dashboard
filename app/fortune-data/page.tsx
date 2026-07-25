@@ -123,7 +123,7 @@ export default function FortuneDataPage() {
       />
       <div className="flex-1 overflow-auto p-4 md:p-6">
         <DashboardPanel>
-          <div className="border-b border-gray-100 bg-[linear-gradient(180deg,#FFFDF9_0%,#FFF8EE_100%)] px-4 py-5">
+          {/* <div className="border-b border-gray-100 bg-[linear-gradient(180deg,#FFFDF9_0%,#FFF8EE_100%)] px-4 py-5">
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-[#F4D6A6] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#C46210]">
@@ -186,7 +186,7 @@ export default function FortuneDataPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="px-4 py-4">
             <div className="overflow-hidden rounded-lg border border-gray-100">
