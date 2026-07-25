@@ -17,8 +17,10 @@ interface ProductCardProps {
     _id: string;
     productName: string;
     price: number | string;
+    ca_price?: number | string
     productType?: string;
     quantity?: number;
+    
     img?: string;
     imgs?: string[];
     description?: string;
@@ -60,7 +62,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
           {product.productName}
         </CardTitle>
         <div className="flex justify-between items-center mt-1">
-          <span className="font-semibold text-lg">${product.price}</span>
+          <span className="font-semibold text-lg">${product?.price ? product?.price : `${product?.ca_price + " " + "CAD"}`}</span>
           <span className="text-xs text-muted-foreground capitalize bg-secondary px-2 py-0.5 rounded-full">
             {product.productType || "Card"}
           </span>
