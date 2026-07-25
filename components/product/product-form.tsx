@@ -994,7 +994,7 @@ export function ProductForm({
 
                 <div className="rounded-lg border p-4 shadow-sm space-y-4">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="font-semibold text-lg">Pass &amp; Play</h3>
+                    <h3 className="font-semibold text-lg">Press &amp; Play</h3>
                     <Button
                       type="button"
                       variant="outline"
