@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import {
   BookOpen,
+  Database,
   Gift,
   LogOut,
   QrCode,
@@ -37,6 +38,7 @@ const navItems = [
   { href: "/customers", label: "Customer", icon: UserRound, match: (path: string) => path.startsWith("/customers") },
   { href: "/orders", label: "Order", icon: ReceiptText, match: (path: string) => path.startsWith("/orders") },
   { href: "/fortune-readings", label: "Fortune Telling", icon: ScrollText, match: (path: string) => path.startsWith("/fortune-readings") },
+  { href: "/fortune-data", label: "Fortune Data", icon: Database, match: (path: string) => path.startsWith("/fortune-data") },
   { href: "/subscribers", label: "Subscribers", icon: UsersRound, match: (path: string) => path.startsWith("/subscribers") },
   { href: "/reviews", label: "Reviews...", icon: Star, match: (path: string) => path.startsWith("/reviews") },
   { href: "/blogs", label: "Blogs", icon: BookOpen, match: (path: string) => path.startsWith("/blogs") },

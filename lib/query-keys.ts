@@ -64,4 +64,9 @@ export const queryKeys = {
     lists: () => [...queryKeys.subscribers.all, "list"] as const,
     list: () => [...queryKeys.subscribers.lists()] as const,
   },
+
+  fortunes: {
+    all: ["fortunes"] as const,
+    definitions: () => [...queryKeys.fortunes.all, "definitions"] as const,
+  },
 } as const;
