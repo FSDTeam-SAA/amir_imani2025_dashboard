@@ -43,6 +43,7 @@ export const productService = {
     if (input.previousPrice !== undefined) formData.append("previousPrice", input.previousPrice.toString());
     formData.append("ca_price", input.ca_price.toString());
     formData.append("addHome", input.addHome.toString());
+    formData.append("isPreOrder", input.isPreOrder.toString());
     formData.append("productType", input.productType);
     if (input.category) formData.append("category", input.category);
     if (input.merchandiseBadge)
@@ -124,6 +125,7 @@ export const productService = {
         ca_price:
           input.ca_price !== undefined ? Number(input.ca_price) : undefined,
         addHome: input.addHome,
+        isPreOrder: input.isPreOrder,
         productType: input.productType,
         category: input.category,
         merchandiseBadge: input.merchandiseBadge,
@@ -191,6 +193,9 @@ export const productService = {
     }
     if (input.addHome !== undefined) {
       formData.append("addHome", input.addHome.toString());
+    }
+    if (input.isPreOrder !== undefined) {
+      formData.append("isPreOrder", input.isPreOrder.toString());
     }
     if (input.productType) formData.append("productType", input.productType);
     if (input.category) formData.append("category", input.category);
