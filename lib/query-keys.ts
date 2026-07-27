@@ -59,6 +59,13 @@ export const queryKeys = {
       [...queryKeys.reviews.lists(), filters] as const,
   },
 
+  preorders: {
+    all: ["preorders"] as const,
+    lists: () => [...queryKeys.preorders.all, "list"] as const,
+    list: (filters: { search?: string; status?: string }) =>
+      [...queryKeys.preorders.lists(), filters] as const,
+  },
+
   subscribers: {
     all: ["subscribers"] as const,
     lists: () => [...queryKeys.subscribers.all, "list"] as const,

@@ -32,6 +32,7 @@ const navItems = [
   { href: "/coupon-management", label: "Coupon Management", icon: Gift, match: (path: string) => path.startsWith("/coupon-management") },
   { href: "/customers", label: "Customer", icon: UserRound, match: (path: string) => path.startsWith("/customers") },
   { href: "/orders", label: "Order", icon: ReceiptText, match: (path: string) => path.startsWith("/orders") },
+  { href: "/preorders", label: "Preorders", icon: ReceiptText, match: (path: string) => path.startsWith("/preorders") },
   { href: "/fortune-readings", label: "Fortune Telling", icon: ScrollText, match: (path: string) => path.startsWith("/fortune-readings") },
   { href: "/fortune-data", label: "Fortune Data", icon: Database, match: (path: string) => path.startsWith("/fortune-data") },
   { href: "/subscribers", label: "Subscribers", icon: UsersRound, match: (path: string) => path.startsWith("/subscribers") },
