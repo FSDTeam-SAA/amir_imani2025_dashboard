@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -108,7 +109,7 @@ export default function PreordersPage() {
                 <TableRow className="hover:bg-transparent">
                   {[
                     "Customer",
-                    "Email",
+                    "Contact",
                     "Product",
                     "Type",
                     "Category",
@@ -162,10 +163,24 @@ export default function PreordersPage() {
                         {preorder.userName}
                       </TableCell>
                       <TableCell className="text-gray-600">
-                        {preorder.userEmail}
+                        <div>{preorder.userEmail}</div>
+                        {preorder.userPhone && (
+                          <div className="mt-1 text-xs text-gray-400">
+                            {preorder.userPhone}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="font-medium text-gray-700">
-                        {preorder.productName}
+                        <div className="flex min-w-44 items-center gap-3">
+                          <Image
+                            src={getProductImage(preorder)}
+                            alt={preorder.productName}
+                            width={40}
+                            height={40}
+                            className="h-10 w-10 shrink-0 rounded object-cover"
+                          />
+                          <span>{preorder.productName}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="capitalize text-gray-600">
                         {preorder.productType || "n/a"}
@@ -227,4 +242,12 @@ function formatDate(value: string) {
 function statusLabel(status: string) {
   if (status.toLowerCase() === "all") return "All";
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getProductImage(preorder: Preorder) {
+  if (preorder.productImage) return preorder.productImage;
+
+  return typeof preorder.productId === "string"
+    ? "/no-image.jpg"
+    : preorder.productId.imgs?.[0] || "/no-image.jpg";
 }

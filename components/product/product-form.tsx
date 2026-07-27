@@ -88,6 +88,7 @@ const formSchema = z
       z.number().min(0, "Canadian price must be positive."),
     ),
     addHome: z.boolean(),
+    isPreOrder: z.boolean(),
     productType: z.string().min(1, "Please select a product type."),
     category: z.string().optional(),
     merchandiseBadge: z
@@ -193,6 +194,7 @@ export function ProductForm({
       previousPrice: initialData?.previousPrice,
       ca_price: initialData?.ca_price || 0,
       addHome: initialData?.addHome ?? false,
+      isPreOrder: initialData?.isPreOrder ?? false,
       productType: initialData?.productType || "card",
       category: initialData?.category || "",
       merchandiseBadge: initialData?.merchandiseBadge || "none",
@@ -331,6 +333,7 @@ export function ProductForm({
         values.previousPrice !== undefined ? Number(values.previousPrice) : undefined,
       ca_price: Number(values.ca_price),
       addHome: values.productType === "card" ? values.addHome : false,
+      isPreOrder: values.isPreOrder,
       productType: values.productType,
       category:
         values.productType === "marchandice" ? values.category : undefined,
@@ -438,6 +441,34 @@ export function ProductForm({
                         <SelectItem value="marchandice">Merchandise</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isPreOrder"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Make this product available for pre-order?</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "true")}
+                      value={field.value ? "true" : "false"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select availability" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="false">No — Add to Cart</SelectItem>
+                        <SelectItem value="true">Yes — Pre-order</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Controls the purchase button label on the website.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

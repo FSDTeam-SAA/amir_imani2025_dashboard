@@ -5,6 +5,7 @@ export interface Product {
   previousPrice?: number;
   ca_price?: number;
   addHome?: boolean;
+  isPreOrder?: boolean;
   productType?: "card" | "marchandice" | string; // Assuming 'marchandice' is the typo in DB, keeping it as string literal or string
   category?:
     | "ALL"
@@ -93,6 +94,7 @@ export interface CreateProductInput {
   previousPrice?: number;
   ca_price: number;
   addHome: boolean;
+  isPreOrder: boolean;
   productType: string;
   category?: string;
   merchandiseBadge?: MerchandiseBadge;
