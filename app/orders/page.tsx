@@ -289,7 +289,7 @@ export default function OrdersPage() {
           <table className="w-full text-left border-collapse rounded-lg border border-gray-100 shadow-sm">
             <thead className="bg-[#FDEBD8]">
               <tr className="border-none">
-                {['Order ID', 'Customer', 'Products', 'Order Date', 'Total', 'Payment', 'Order Status'].map((head) => (
+                {['Order ID', 'Customer', 'Products', 'Shipping address', 'Order Date', 'Total', 'Payment', 'Order Status'].map((head) => (
                   <th
                     key={head}
                     className="h-12 text-left text-xs font-bold text-[#D35738] border-none px-4 first:pl-6 last:pr-6"
@@ -302,7 +302,7 @@ export default function OrdersPage() {
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-500">
+                  <td colSpan={8} className="text-center py-8 text-gray-500">
                     No orders found
                   </td>
                 </tr>
@@ -353,6 +353,15 @@ export default function OrdersPage() {
                           </div>
                         )) || "N/A"}
                       </div>
+                    </td>
+                    <td className="min-w-48 py-4 px-4 text-xs leading-5 text-[#666666]">
+                      {order.shippingAddress ? (
+                        <>
+                          {order.shippingAddress.street}<br />
+                          {order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.postalCode}<br />
+                          {order.shippingAddress.country}
+                        </>
+                      ) : "N/A"}
                     </td>
                     <td className="py-4 px-4 text-sm font-normal text-[#8A8A8A]">
                       {formatDate(order.orderDate)}
