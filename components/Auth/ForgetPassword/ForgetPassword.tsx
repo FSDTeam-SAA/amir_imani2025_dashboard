@@ -104,7 +104,7 @@ export default function ForgetPassword() {
           {/* Submit */}
           <Button
             type="submit"
-            className="w-full h-10 bg-foreground hover:bg-foreground/50 cursor-pointer"
+            className="w-full !rounded-none h-10 bg-foreground hover:bg-foreground/50 cursor-pointer"
             disabled={isLoading}
           >
             {isLoading ? "Sending OTP..." : "Send OTP"}
