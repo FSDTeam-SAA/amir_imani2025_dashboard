@@ -45,7 +45,9 @@ export interface Product {
   homeImage?: string;
   quantity?: number;
   color?: string[];
+  colorImageIndexes?: Record<string, number>;
   size?: string[];
+  sizeStocks?: { size: string; quantity: number }[];
   createdAt: string;
   updatedAt: string;
   __v?: number;
@@ -104,7 +106,9 @@ export interface CreateProductInput {
   imgs: File[]; // Always an array, can be empty
   existingImgs: string[]; // Always an array of URLs, can be empty
   color?: string[];
+  colorImageIndexes?: Record<string, number>;
   size?: string[];
+  sizeStocks?: { size: string; quantity: number }[];
   quantity?: number;
   ruleTitle?: string;
   rulls?: ProductRule[];

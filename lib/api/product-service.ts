@@ -52,7 +52,9 @@ export const productService = {
     if (input.description) formData.append("description", input.description);
     if (input.videoLink) formData.append("videoLink", input.videoLink);
     appendJsonArray(formData, "color", input.color);
+    if (input.colorImageIndexes) formData.append("colorImageIndexes", JSON.stringify(input.colorImageIndexes));
     appendJsonArray(formData, "size", input.size);
+    appendJsonArray(formData, "sizeStocks", input.sizeStocks);
     if (input.quantity !== undefined)
       formData.append("quantity", input.quantity.toString());
     if (input.ruleTitle) formData.append("ruleTitle", input.ruleTitle);
@@ -133,7 +135,9 @@ export const productService = {
         description: input.description,
         videoLink: input.videoLink,
         color: input.color,
+        colorImageIndexes: input.colorImageIndexes,
         size: input.size,
+        sizeStocks: input.sizeStocks,
         quantity:
           input.quantity !== undefined ? Number(input.quantity) : undefined,
         ruleTitle: input.ruleTitle,
@@ -244,7 +248,9 @@ export const productService = {
     }
 
     appendJsonArray(formData, "color", input.color);
+    if (input.colorImageIndexes) formData.append("colorImageIndexes", JSON.stringify(input.colorImageIndexes));
     appendJsonArray(formData, "size", input.size);
+    appendJsonArray(formData, "sizeStocks", input.sizeStocks);
     appendJsonArray(formData, "rulls", input.rulls);
     appendJsonArray(formData, "passandplay", input.passandplay);
 

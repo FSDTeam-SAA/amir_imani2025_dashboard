@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -180,6 +180,12 @@ export function ProductForm({
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [colorImageIndexes, setColorImageIndexes] = useState<Record<string, number>>(
+    initialData?.colorImageIndexes || {},
+  );
+  const [sizeStockValues, setSizeStockValues] = useState<Record<string, number>>(
+    Object.fromEntries((initialData?.sizeStocks || []).map((item) => [item.size, item.quantity])),
+  );
   const [homeImage, setHomeImage] = useState<File>();
   const [homeImagePreview, setHomeImagePreview] = useState("");
   const [existingHomeImage, setExistingHomeImage] = useState(
@@ -235,6 +241,9 @@ export function ProductForm({
   });
 
   const productType = form.watch("productType");
+  const colors = form.watch("color") || [];
+  const sizes = form.watch("size") || [];
+  const availableImages = [...existingImages, ...previewUrls];
 
   const {
     fields: ruleFields,
@@ -345,7 +354,12 @@ export function ProductForm({
       description: values.description,
       videoLink: values.videoLink,
       color: Array.isArray(values.color) ? values.color : [],
+      colorImageIndexes,
       size: Array.isArray(values.size) ? values.size : [],
+      sizeStocks: (values.size || []).map((size) => ({
+        size,
+        quantity: Number(sizeStockValues[size] || 0),
+      })),
       quantity:
         values.quantity !== undefined ? Number(values.quantity) : undefined,
       imgs: images.length > 0 ? images : [],
@@ -506,6 +520,7 @@ export function ProductForm({
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="merchandiseBadge"
@@ -715,6 +730,23 @@ export function ProductForm({
                       </FormItem>
                     )}
                   />
+
+                  {colors.length > 0 && (
+                    <ColorImageSelectors
+                      colors={colors}
+                      availableImages={availableImages}
+                      colorImageIndexes={colorImageIndexes}
+                      onChange={setColorImageIndexes}
+                    />
+                  )}
+
+                  {sizes.length > 0 && (
+                    <SizeStockInputs
+                      sizes={sizes}
+                      values={sizeStockValues}
+                      onChange={setSizeStockValues}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
@@ -1394,4 +1426,12 @@ export function ProductForm({
       </form>
     </Form>
   );
+}
+
+function ColorImageSelectors({ colors, availableImages, colorImageIndexes, onChange }: { colors: string[]; availableImages: string[]; colorImageIndexes: Record<string, number>; onChange: Dispatch<SetStateAction<Record<string, number>>> }) {
+  return <div className="space-y-3 rounded-md border border-dashed p-3"><div><p className="text-sm font-medium">Color images</p><p className="text-xs text-muted-foreground">Upload product images below, then select the matching image for each color.</p></div>{colors.map((color) => <div key={color} className="flex items-center gap-3"><span className="h-6 w-6 shrink-0 rounded-full border" style={{ backgroundColor: color.startsWith("#") ? color : `#${color}` }} /><span className="min-w-20 text-sm">{color}</span><Select value={colorImageIndexes[color]?.toString() ?? "none"} onValueChange={(value) => onChange((current) => { const next = { ...current }; if (value === "none") delete next[color]; else next[color] = Number(value); return next; })}><SelectTrigger className="max-w-xs"><SelectValue placeholder="Use default product image" /></SelectTrigger><SelectContent><SelectItem value="none">Use default product image</SelectItem>{availableImages.map((_, index) => <SelectItem key={index} value={index.toString()}>Product image {index + 1}</SelectItem>)}</SelectContent></Select></div>)}</div>;
+}
+
+function SizeStockInputs({ sizes, values, onChange }: { sizes: string[]; values: Record<string, number>; onChange: Dispatch<SetStateAction<Record<string, number>>> }) {
+  return <div className="space-y-3 rounded-md border border-dashed p-3"><div><p className="text-sm font-medium">Size-wise stock</p><p className="text-xs text-muted-foreground">Set the available quantity for each size.</p></div><div className="grid gap-3 sm:grid-cols-2">{sizes.map((size) => <label key={size} className="flex items-center gap-3 text-sm"><span className="w-12 font-medium uppercase">{size}</span><Input type="number" min="0" value={values[size] ?? 0} onChange={(event) => onChange((current) => ({ ...current, [size]: Number(event.target.value) || 0 }))} aria-label={`${size} stock quantity`} /></label>)}</div></div>;
 }
