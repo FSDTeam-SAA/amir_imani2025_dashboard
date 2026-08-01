@@ -289,7 +289,7 @@ export default function OrdersPage() {
           <table className="w-full text-left border-collapse rounded-lg border border-gray-100 shadow-sm">
             <thead className="bg-[#FDEBD8]">
               <tr className="border-none">
-                {['Order ID', 'Customer', 'Products / options', 'Shipping address', 'Order Date', 'Total', 'Payment', 'Order Status'].map((head) => (
+                {['Order ID', 'Type', 'Customer', 'Products / options', 'Shipping address', 'Order Date', 'Total', 'Payment', 'Order Status'].map((head) => (
                   <th
                     key={head}
                     className="h-12 text-left text-xs font-bold text-[#D35738] border-none px-4 first:pl-6 last:pr-6"
@@ -302,7 +302,7 @@ export default function OrdersPage() {
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-gray-500">
+                  <td colSpan={9} className="text-center py-8 text-gray-500">
                     No orders found
                   </td>
                 </tr>
@@ -314,6 +314,17 @@ export default function OrdersPage() {
                   >
                     <td className="py-4 px-4 pl-6 font-extrabold text-[#1A1A1A] text-sm tracking-tight">
                       {order?._id.slice(-8).toUpperCase()}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          order.orderType === "preorder"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {order.orderType === "preorder" ? "Pre-order" : "Order"}
+                      </span>
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
