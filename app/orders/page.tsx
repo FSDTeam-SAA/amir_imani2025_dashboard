@@ -289,7 +289,7 @@ export default function OrdersPage() {
           <table className="w-full text-left border-collapse rounded-lg border border-gray-100 shadow-sm">
             <thead className="bg-[#FDEBD8]">
               <tr className="border-none">
-                {['Order ID', 'Customer', 'Products', 'Shipping address', 'Order Date', 'Total', 'Payment', 'Order Status'].map((head) => (
+                {['Order ID', 'Customer', 'Products / options', 'Shipping address', 'Order Date', 'Total', 'Payment', 'Order Status'].map((head) => (
                   <th
                     key={head}
                     className="h-12 text-left text-xs font-bold text-[#D35738] border-none px-4 first:pl-6 last:pr-6"
@@ -342,16 +342,18 @@ export default function OrdersPage() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex min-w-56 flex-col gap-2">
-                        {(order.productDetails?.length ? order.productDetails : order.products?.map((productName: string) => ({ productName })))?.map((product: any) => (
-                          <div key={product._id || product.productName} className="flex items-center gap-2 text-sm font-medium text-[#4A4A4A]">
+                        {(order.items?.length ? order.items : order.productDetails?.map((product: any) => ({ productName: product.productName, productId: product._id })))?.map((item: any, index: number) => {
+                          const product = order.productDetails?.find((detail: any) => detail._id === item.productId) || item;
+                          const options = [item.color && `Color: ${item.color}`, item.size && `Size: ${item.size}`].filter(Boolean);
+                          return <div key={`${item.productId || product._id || product.productName}-${index}`} className="flex items-center gap-2 text-sm font-medium text-[#4A4A4A]">
                             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-gray-100">
                               {product.imgs?.[0] ? (
                                 <img src={product.imgs[0]} alt={product.productName} className="h-full w-full object-cover" />
                               ) : null}
                             </div>
-                            <span>{product.productName}</span>
-                          </div>
-                        )) || "N/A"}
+                            <div><span>{item.productName || product.productName}</span><p className="mt-0.5 text-xs font-normal text-gray-500">Qty: {item.quantity ?? 1}{options.length ? ` · ${options.join(" · ")}` : ""}</p></div>
+                          </div>;
+                        }) || "N/A"}
                       </div>
                     </td>
                     <td className="min-w-48 py-4 px-4 text-xs leading-5 text-[#666666]">
