@@ -66,6 +66,12 @@ export const queryKeys = {
       [...queryKeys.preorders.lists(), filters] as const,
   },
 
+  productNotifications: {
+    all: ["product-notifications"] as const,
+    lists: () => [...queryKeys.productNotifications.all, "list"] as const,
+    list: () => [...queryKeys.productNotifications.lists()] as const,
+  },
+
   subscribers: {
     all: ["subscribers"] as const,
     lists: () => [...queryKeys.subscribers.all, "list"] as const,

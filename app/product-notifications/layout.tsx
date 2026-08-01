@@ -1,5 +1,18 @@
+"use client";
+
 import { Sidebar } from "@/components/qr-code/sidebar";
+import { signOut } from "next-auth/react";
 
 export default function ProductNotificationsLayout({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-screen"><Sidebar />{children}</div>;
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    signOut({ callbackUrl: "/login" });
+  };
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar onLogout={handleLogout} />
+      <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+    </div>
+  );
 }

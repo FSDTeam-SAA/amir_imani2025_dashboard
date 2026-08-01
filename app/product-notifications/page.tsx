@@ -1,23 +1,205 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { DashboardPanel } from "@/components/dashboard/dashboard-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { FilterControl } from "@/components/dashboard/filter-control";
+import {
+  DashboardPanel,
+  PaginationFooter,
+} from "@/components/dashboard/dashboard-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { productNotificationService } from "@/lib/api/product-notification-service";
+import { queryKeys } from "@/lib/query-keys";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function ProductNotificationsPage() {
-  const { data: notifications = [], isLoading, isError } = useQuery({ queryKey: ["product-notifications"], queryFn: productNotificationService.getAll });
-  return <>
-    <DashboardHeader title="Product notifications" description="Customers waiting to be notified when unavailable products return." onLogout={() => { localStorage.removeItem("authToken"); signOut({ callbackUrl: "/login" }); }} />
-    <div className="flex-1 overflow-auto p-4 md:p-6"><DashboardPanel>
-      <div className="flex items-center gap-3 border-b border-[#f2e3c6] p-5"><div className="rounded-full bg-[#F04D2A]/10 p-2 text-[#F04D2A]"><BellRing className="h-5 w-5" /></div><div><p className="font-semibold text-gray-900">{notifications.length} notification request{notifications.length === 1 ? "" : "s"}</p><p className="text-sm text-gray-500">Each email belongs to a customer waiting for a specific product.</p></div></div>
-      <div className="overflow-x-auto p-4"><Table><TableHeader className="bg-[#F2E3C6]/70"><TableRow>{["Product", "Customer", "Email", "Requested"].map((item) => <TableHead key={item} className="text-xs font-semibold text-[#F04D2A]">{item}</TableHead>)}</TableRow></TableHeader><TableBody>
-        {isLoading ? <TableRow><TableCell colSpan={4} className="py-10 text-center text-gray-500">Loading notification requests...</TableCell></TableRow> : isError ? <TableRow><TableCell colSpan={4} className="py-10 text-center text-rose-500">Failed to load notification requests.</TableCell></TableRow> : notifications.length === 0 ? <TableRow><TableCell colSpan={4} className="py-10 text-center text-gray-500">No notification requests yet.</TableCell></TableRow> : notifications.map((item) => <TableRow key={item._id}><TableCell><div className="flex min-w-48 items-center gap-3">{item.productImage ? <Image src={item.productImage} alt="" width={40} height={40} className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-gray-100" />}<span className="font-medium text-gray-800">{item.productName}</span></div></TableCell><TableCell className="text-gray-600">{item.userName || "Guest"}</TableCell><TableCell className="text-gray-700">{item.email}</TableCell><TableCell className="whitespace-nowrap text-gray-500">{new Date(item.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}</TableCell></TableRow>)}
-      </TableBody></Table></div>
-    </DashboardPanel></div>
-  </>;
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: notifications = [], isLoading, isError } = useQuery({
+    queryKey: queryKeys.productNotifications.list(),
+    queryFn: productNotificationService.getAll,
+  });
+
+  const filteredNotifications = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    if (!normalizedSearch) return notifications;
+
+    return notifications.filter((notification) =>
+      [
+        notification.productName,
+        notification.userName || "",
+        notification.email,
+      ].some((value) => value.toLowerCase().includes(normalizedSearch)),
+    );
+  }, [notifications, search]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE),
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const paginatedNotifications = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [currentPage, filteredNotifications]);
+
+  const from =
+    filteredNotifications.length === 0
+      ? 0
+      : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const to = Math.min(
+    currentPage * ITEMS_PER_PAGE,
+    filteredNotifications.length,
+  );
+
+  return (
+    <>
+      <DashboardHeader
+        title="Product notifications"
+        description="Track customers who want an email when an unavailable product returns."
+        onLogout={() => {
+          localStorage.removeItem("authToken");
+          signOut({ callbackUrl: "/login" });
+        }}
+      />
+
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        <DashboardPanel>
+          <div className="p-4">
+            <FilterControl
+              searchPlaceholder="Search product, customer or email..."
+              filters={[]}
+              onSearch={(value) => {
+                setSearch(value);
+                setCurrentPage(1);
+              }}
+              onFilterChange={() => undefined}
+            />
+          </div>
+
+          <div className="px-4 pb-4 text-xs text-gray-500">
+            {filteredNotifications.length} notification request
+            {filteredNotifications.length === 1 ? "" : "s"} found.
+          </div>
+
+          <div className="overflow-x-auto px-4">
+            <Table>
+              <TableHeader className="bg-[#F2E3C6]/70">
+                <TableRow className="hover:bg-transparent">
+                  {["Product", "Customer", "Email", "Requested"].map(
+                    (head) => (
+                      <TableHead
+                        key={head}
+                        className="h-10 text-xs font-semibold text-[#F04D2A]"
+                      >
+                        {head}
+                      </TableHead>
+                    ),
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <EmptyRow message="Loading notification requests..." />
+                ) : isError ? (
+                  <EmptyRow
+                    message="Failed to load notification requests."
+                    className="text-rose-500"
+                  />
+                ) : paginatedNotifications.length === 0 ? (
+                  <EmptyRow message="No notification requests found." />
+                ) : (
+                  paginatedNotifications.map((notification) => (
+                    <TableRow
+                      key={notification._id}
+                      className="border-gray-50 hover:bg-gray-50/50"
+                    >
+                      <TableCell>
+                        <div className="flex min-w-52 items-center gap-3">
+                          {notification.productImage ? (
+                            <Image
+                              src={notification.productImage}
+                              alt={notification.productName}
+                              width={40}
+                              height={40}
+                              className="h-10 w-10 shrink-0 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded bg-gray-100" />
+                          )}
+                          <span className="font-medium text-gray-800">
+                            {notification.productName}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {notification.userName || "Guest"}
+                      </TableCell>
+                      <TableCell className="text-gray-700">
+                        {notification.email}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-gray-500">
+                        {formatDate(notification.createdAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <PaginationFooter
+            from={from}
+            to={to}
+            total={filteredNotifications.length}
+            pages={Array.from({ length: totalPages }, (_, index) => index + 1)}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
+        </DashboardPanel>
+      </div>
+    </>
+  );
+}
+
+function EmptyRow({
+  message,
+  className = "",
+}: {
+  message: string;
+  className?: string;
+}) {
+  return (
+    <TableRow>
+      <TableCell
+        colSpan={4}
+        className={`py-10 text-center text-sm text-gray-500 ${className}`}
+      >
+        {message}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
