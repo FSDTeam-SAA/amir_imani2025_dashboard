@@ -28,6 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/ui/rich-text-editor";
 import { TagInput } from "@/components/ui/tag-input";
+import { toast } from "sonner";
 import {
   CreateProductInput,
   Product,
@@ -186,6 +187,14 @@ export function ProductForm({
   const [sizeStockValues, setSizeStockValues] = useState<Record<string, number>>(
     Object.fromEntries((initialData?.sizeStocks || []).map((item) => [item.size, item.quantity])),
   );
+  const [colorSizeStockValues, setColorSizeStockValues] = useState<Record<string, Record<string, number>>>(
+    Object.fromEntries(
+      (initialData?.colorSizeStocks || []).map((item) => [
+        item.color,
+        Object.fromEntries(item.sizes.map((size) => [size.size, size.quantity])),
+      ]),
+    ),
+  );
   const [homeImage, setHomeImage] = useState<File>();
   const [homeImagePreview, setHomeImagePreview] = useState("");
   const [existingHomeImage, setExistingHomeImage] = useState(
@@ -244,6 +253,43 @@ export function ProductForm({
   const colors = form.watch("color") || [];
   const sizes = form.watch("size") || [];
   const availableImages = [...existingImages, ...previewUrls];
+  const totalQuantity = Number(form.watch("quantity") || 0);
+  const allocatedQuantity = colors.length > 0
+    ? colors.reduce(
+        (total, color) =>
+          total +
+          Object.values(colorSizeStockValues[color] || {}).reduce(
+            (sum, value) => sum + Number(value || 0),
+            0,
+          ),
+        0,
+      )
+    : Object.values(sizeStockValues).reduce(
+        (total, value) => total + Number(value || 0),
+        0,
+      );
+
+  const canAllocateStock = (nextTotal: number) => {
+    if (nextTotal <= totalQuantity) return true;
+    toast.error(`Allocated stock (${nextTotal}) cannot exceed total quantity (${totalQuantity}).`);
+    return false;
+  };
+
+  const updateSizeStock = (size: string, nextQuantity: number) => {
+    const nextTotal = allocatedQuantity - Number(sizeStockValues[size] || 0) + nextQuantity;
+    if (!canAllocateStock(nextTotal)) return;
+    setSizeStockValues((current) => ({ ...current, [size]: nextQuantity }));
+  };
+
+  const updateColorSizeStock = (color: string, size: string, nextQuantity: number) => {
+    const nextTotal =
+      allocatedQuantity - Number(colorSizeStockValues[color]?.[size] || 0) + nextQuantity;
+    if (!canAllocateStock(nextTotal)) return;
+    setColorSizeStockValues((current) => ({
+      ...current,
+      [color]: { ...current[color], [size]: nextQuantity },
+    }));
+  };
 
   const {
     fields: ruleFields,
@@ -335,6 +381,13 @@ export function ProductForm({
   };
 
   const handleSubmit = (values: ProductFormValues) => {
+    if (allocatedQuantity > Number(values.quantity || 0)) {
+      toast.error(
+        `Allocated stock (${allocatedQuantity}) cannot exceed total quantity (${values.quantity || 0}).`,
+      );
+      return;
+    }
+
     const input: CreateProductInput = {
       productName: values.productName,
       price: Number(values.price),
@@ -360,6 +413,16 @@ export function ProductForm({
         size,
         quantity: Number(sizeStockValues[size] || 0),
       })),
+      colorSizeStocks:
+        colors.length > 0 && (values.size || []).length > 0
+          ? colors.map((color) => ({
+              color,
+              sizes: (values.size || []).map((size) => ({
+                size,
+                quantity: Number(colorSizeStockValues[color]?.[size] || 0),
+              })),
+            }))
+          : undefined,
       quantity:
         values.quantity !== undefined ? Number(values.quantity) : undefined,
       imgs: images.length > 0 ? images : [],
@@ -659,7 +722,22 @@ export function ProductForm({
                     <FormItem>
                       <FormLabel>Quantity</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                          onChange={(event) => {
+                            const nextQuantity = Number(event.target.value || 0);
+                            if (nextQuantity < allocatedQuantity) {
+                              toast.error(
+                                `Total quantity cannot be lower than allocated stock (${allocatedQuantity}).`,
+                              );
+                              return;
+                            }
+                            field.onChange(event);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -740,13 +818,20 @@ export function ProductForm({
                     />
                   )}
 
-                  {sizes.length > 0 && (
+                  {colors.length > 0 && sizes.length > 0 ? (
+                    <ColorSizeStockInputs
+                      colors={colors}
+                      sizes={sizes}
+                      values={colorSizeStockValues}
+                      onChange={updateColorSizeStock}
+                    />
+                  ) : sizes.length > 0 ? (
                     <SizeStockInputs
                       sizes={sizes}
                       values={sizeStockValues}
-                      onChange={setSizeStockValues}
+                      onChange={updateSizeStock}
                     />
-                  )}
+                  ) : null}
 
                   <FormField
                     control={form.control}
@@ -1432,6 +1517,10 @@ function ColorImageSelectors({ colors, availableImages, colorImageIndexes, onCha
   return <div className="space-y-3 rounded-md border border-dashed p-3"><div><p className="text-sm font-medium">Color images</p><p className="text-xs text-muted-foreground">Upload product images below, then select the matching image for each color.</p></div>{colors.map((color) => <div key={color} className="flex items-center gap-3"><span className="h-6 w-6 shrink-0 rounded-full border" style={{ backgroundColor: color.startsWith("#") ? color : `#${color}` }} /><span className="min-w-20 text-sm">{color}</span><Select value={colorImageIndexes[color]?.toString() ?? "none"} onValueChange={(value) => onChange((current) => { const next = { ...current }; if (value === "none") delete next[color]; else next[color] = Number(value); return next; })}><SelectTrigger className="max-w-xs"><SelectValue placeholder="Use default product image" /></SelectTrigger><SelectContent><SelectItem value="none">Use default product image</SelectItem>{availableImages.map((_, index) => <SelectItem key={index} value={index.toString()}>Product image {index + 1}</SelectItem>)}</SelectContent></Select></div>)}</div>;
 }
 
-function SizeStockInputs({ sizes, values, onChange }: { sizes: string[]; values: Record<string, number>; onChange: Dispatch<SetStateAction<Record<string, number>>> }) {
-  return <div className="space-y-3 rounded-md border border-dashed p-3"><div><p className="text-sm font-medium">Size-wise stock</p><p className="text-xs text-muted-foreground">Set the available quantity for each size.</p></div><div className="grid gap-3 sm:grid-cols-2">{sizes.map((size) => <label key={size} className="flex items-center gap-3 text-sm"><span className="w-12 font-medium uppercase">{size}</span><Input type="number" min="0" value={values[size] ?? 0} onChange={(event) => onChange((current) => ({ ...current, [size]: Number(event.target.value) || 0 }))} aria-label={`${size} stock quantity`} /></label>)}</div></div>;
+function SizeStockInputs({ sizes, values, onChange }: { sizes: string[]; values: Record<string, number>; onChange: (size: string, quantity: number) => void }) {
+  return <div className="space-y-3 rounded-md border border-dashed p-3"><div><p className="text-sm font-medium">Size-wise stock</p><p className="text-xs text-muted-foreground">Set the available quantity for each size.</p></div><div className="grid gap-3 sm:grid-cols-2">{sizes.map((size) => <label key={size} className="flex items-center gap-3 text-sm"><span className="w-12 font-medium uppercase">{size}</span><Input type="number" min="0" value={values[size] ?? 0} onChange={(event) => onChange(size, Number(event.target.value) || 0)} aria-label={`${size} stock quantity`} /></label>)}</div></div>;
+}
+
+function ColorSizeStockInputs({ colors, sizes, values, onChange }: { colors: string[]; sizes: string[]; values: Record<string, Record<string, number>>; onChange: (color: string, size: string, quantity: number) => void }) {
+  return <div className="space-y-3 rounded-md border border-dashed p-3"><div><p className="text-sm font-medium">Color and size stock</p><p className="text-xs text-muted-foreground">Set stock separately for every color and size. Use 0 for an unavailable combination.</p></div><div className="space-y-4">{colors.map((color) => <div key={color} className="rounded-md border p-3"><div className="mb-3 flex items-center gap-2 text-sm font-medium"><span className="h-5 w-5 rounded-full border" style={{ backgroundColor: color.startsWith("#") ? color : `#${color}` }} />{color}</div><div className="grid gap-3 sm:grid-cols-2">{sizes.map((size) => <label key={size} className="flex items-center gap-3 text-sm"><span className="w-12 font-medium uppercase">{size}</span><Input type="number" min="0" value={values[color]?.[size] ?? 0} onChange={(event) => onChange(color, size, Number(event.target.value) || 0)} aria-label={`${color} ${size} stock quantity`} /></label>)}</div></div>)}</div></div>;
 }

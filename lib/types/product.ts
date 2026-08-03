@@ -48,6 +48,10 @@ export interface Product {
   colorImageIndexes?: Record<string, number>;
   size?: string[];
   sizeStocks?: { size: string; quantity: number }[];
+  colorSizeStocks?: {
+    color: string;
+    sizes: { size: string; quantity: number }[];
+  }[];
   createdAt: string;
   updatedAt: string;
   __v?: number;
@@ -109,6 +113,10 @@ export interface CreateProductInput {
   colorImageIndexes?: Record<string, number>;
   size?: string[];
   sizeStocks?: { size: string; quantity: number }[];
+  colorSizeStocks?: {
+    color: string;
+    sizes: { size: string; quantity: number }[];
+  }[];
   quantity?: number;
   ruleTitle?: string;
   rulls?: ProductRule[];
