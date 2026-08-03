@@ -55,6 +55,7 @@ export const productService = {
     if (input.colorImageIndexes) formData.append("colorImageIndexes", JSON.stringify(input.colorImageIndexes));
     appendJsonArray(formData, "size", input.size);
     appendJsonArray(formData, "sizeStocks", input.sizeStocks);
+    appendJsonArray(formData, "colorSizeStocks", input.colorSizeStocks);
     if (input.quantity !== undefined)
       formData.append("quantity", input.quantity.toString());
     if (input.ruleTitle) formData.append("ruleTitle", input.ruleTitle);
@@ -138,6 +139,7 @@ export const productService = {
         colorImageIndexes: input.colorImageIndexes,
         size: input.size,
         sizeStocks: input.sizeStocks,
+        colorSizeStocks: input.colorSizeStocks,
         quantity:
           input.quantity !== undefined ? Number(input.quantity) : undefined,
         ruleTitle: input.ruleTitle,
@@ -251,6 +253,7 @@ export const productService = {
     if (input.colorImageIndexes) formData.append("colorImageIndexes", JSON.stringify(input.colorImageIndexes));
     appendJsonArray(formData, "size", input.size);
     appendJsonArray(formData, "sizeStocks", input.sizeStocks);
+    appendJsonArray(formData, "colorSizeStocks", input.colorSizeStocks);
     appendJsonArray(formData, "rulls", input.rulls);
     appendJsonArray(formData, "passandplay", input.passandplay);
 
