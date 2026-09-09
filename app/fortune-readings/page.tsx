@@ -216,13 +216,13 @@ export default function FortuneReadingsPage() {
                   </TableRow>
                 ) : (
                   readings.map((row) => {
-                    const playerName = `${row.userId.firstName} ${row.userId.lastName}`;
-                    const formattedDate = formatDate(row.createdAt);
+                    const playerName = `${row?.userId?.firstName} ${row?.userId?.lastName}`;
+                    const formattedDate = formatDate(row?.createdAt);
                     const status = getStatus(row);
 
                     return (
                       <TableRow
-                        key={row._id}
+                        key={row?._id}
                         className="border-b border-gray-100 hover:bg-gray-50/50"
                       >
                         {/* Player Column */}
@@ -244,7 +244,7 @@ export default function FortuneReadingsPage() {
                         {/* Selected Symbols Column */}
                         <TableCell className="py-4">
                           <div className="flex items-center justify-center gap-2 flex-wrap">
-                            {row.symbols.map((symbol, idx) => {
+                            {row?.symbols?.map((symbol, idx) => {
                               const styles = getSymbolStyles(symbol);
                               return (
                                 <span
@@ -255,8 +255,8 @@ export default function FortuneReadingsPage() {
                                     className={`h-1.5 w-1.5 rounded-full opacity-70`}
                                     style={{ backgroundColor: "currentColor" }}
                                   />
-                                  {symbol.charAt(0) +
-                                    symbol.slice(1).toLowerCase()}
+                                  {symbol?.charAt(0) +
+                                    symbol?.slice(1)?.toLowerCase()}
                                 </span>
                               );
                             })}
