@@ -88,20 +88,31 @@ const handler = NextAuth({
           }
 
           const decoded = decodeJwtPayload(token);
+          const rawRole = decoded.role || data.data?.user?.role || data.data?.role || "";
+          const normalizedRole = rawRole.toLowerCase().replace(/[\s_-]/g, "");
+          const isAdmin = normalizedRole === "admin" || normalizedRole === "superadmin";
+
+          if (!isAdmin) {
+            throw new Error("Access denied. Admin privileges required.");
+          }
 
           return {
-            id: decoded.sub || "unknown",
-            email: decoded.email || credentials.email,
-            role: decoded.role || "",
+            id: decoded.sub || data.data?.user?._id || data.data?.user?.id || "unknown",
+            email: decoded.email || data.data?.user?.email || credentials.email,
+            role: rawRole,
             token, // accessToken from backend
           };
-        } catch (error) {
+        } catch (error: any) {
           console.error("Authorize error:", error);
-          throw new Error("Invalid email or password");
+          throw new Error(error?.message || "Invalid email or password");
         }
       },
     }),
   ],
+
+  pages: {
+    signIn: "/login",
+  },
 
   session: {
     strategy: "jwt",
