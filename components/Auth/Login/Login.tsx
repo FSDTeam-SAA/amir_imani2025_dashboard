@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 // ✅ Zod validation schema
 const loginSchema = z.object({
@@ -32,6 +33,14 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
+
+  React.useEffect(() => {
+    if (errorParam === "AccessDenied") {
+      toast.error("Access denied. Admin privileges are required.");
+    }
+  }, [errorParam]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -58,7 +67,11 @@ export default function Login() {
         toast.success("Logged in successfully!");
       } else {
         // Login failed → show error
-        toast.error(result?.error || "Login failed. Please try again.");
+        const errorMessage =
+          result?.error === "CredentialsSignin"
+            ? "Invalid email or password, or you do not have admin access."
+            : result?.error || "Login failed. Please try again.";
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error(err);
@@ -76,6 +89,12 @@ export default function Login() {
       <p className="text-gray-500 mb-6 text-center">
         Access your account to manage QR codes, Products, and Blogs.
       </p>
+
+      {errorParam === "AccessDenied" && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-md text-center">
+          Access denied: Only administrators are authorized to access this dashboard.
+        </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
