@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node init && next dev",
-    "build": "node init && CI=true next build",
-    "start": "node init && next start",
+    "dev": "next dev",
+    "build": "CI=true next build",
+    "start": "next start",
     "lint": "eslint ."
   },
   "dependencies": {
